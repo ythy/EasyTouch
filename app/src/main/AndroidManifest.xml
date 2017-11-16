@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    android:versionCode="1"
+    android:versionName="2.0.0"
     package="com.mx.easytouch">
 
     <!-- 对外部存储设备的写入权限 -->
@@ -34,10 +36,19 @@
             android:taskAffinity="com.imc.qiuqiu">
         </activity>
 
+        <activity android:name=".activity.MediaActivity"
+            android:screenOrientation="portrait"
+            android:theme="@android:style/Theme.Translucent">
+        </activity>
+
         <service
             android:name="com.mx.easytouch.service.FxService"
             android:enabled="true">
+        </service>
 
+        <service
+            android:name="com.mx.easytouch.service.ScreenshotService"
+            android:enabled="true">
         </service>
 
         <receiver android:name="com.mx.easytouch.receiver.ActionReceiver">

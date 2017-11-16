@@ -15,6 +15,7 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.media.AudioManager;
+import android.media.projection.MediaProjectionManager;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Message;
@@ -40,6 +41,7 @@ import android.widget.Spinner;
 import com.mx.easytouch.R;
 import com.mx.easytouch.db.Providerdata;
 import com.mx.easytouch.service.FxService;
+import com.mx.easytouch.service.ScreenshotService;
 import com.mx.easytouch.utils.CommonUtils;
 import com.mx.easytouch.utils.DBHelper;
 import com.mx.easytouch.vo.InstallPackage;
@@ -134,6 +136,8 @@ public class FuncActivity extends Activity {
     SeekBar seekBarVolumnRing;
 
     DBHelper mDBHelper;
+    public static final int REQUEST_MEDIA_PROJECTION = 155;
+    public static final String TAG = FuncActivity.class.getName();
     private int mPx;
     private int mPy;
     @Override
@@ -342,12 +346,18 @@ public class FuncActivity extends Activity {
     }
 
     public void onBackScreenShotClick() {
-
-        Intent intent = new Intent(FuncActivity.this, FxService.class);
-        intent.putExtra("position_x", mPx);
-        intent.putExtra("position_y", mPy);
-        intent.putExtra("screenshot", true);
-        startService(intent);
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP){
+            Intent intent = new Intent(FuncActivity.this, MediaActivity.class);
+            intent.putExtra("position_x", mPx);
+            intent.putExtra("position_y", mPy);
+            startActivity(intent);
+        }else{
+            Intent intent = new Intent(FuncActivity.this, FxService.class);
+            intent.putExtra("position_x", mPx);
+            intent.putExtra("position_y", mPy);
+            intent.putExtra("screenshot", true);
+            startService(intent);
+        }
         this.finish();
     }
 
@@ -401,7 +411,6 @@ public class FuncActivity extends Activity {
             llFavApp.addView(ivIcon);
         }
     }
-
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
