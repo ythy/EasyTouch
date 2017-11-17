@@ -5,9 +5,11 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
+import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
+import android.util.Log;
 
 import java.io.File;
 
@@ -65,5 +67,17 @@ public class CommonUtils {
             context.sendBroadcast(new Intent(Intent.ACTION_MEDIA_MOUNTED,
                     Uri.parse("file://" + Environment.getExternalStorageDirectory())));
         }
+    }
+
+    public static void mediaScan(Context context, File file) {
+        MediaScannerConnection.scanFile(context,
+                new String[] { file.getAbsolutePath() }, null,
+                new MediaScannerConnection.OnScanCompletedListener() {
+                    @Override
+                    public void onScanCompleted(String path, Uri uri) {
+                        Log.v("MediaScanWork", "file " + path
+                                + " was scanned seccessfully: " + uri);
+                    }
+                });
     }
 }

@@ -158,11 +158,11 @@ public class ScreenshotService extends Service {
                         offset += rowPadding;
                     }
                     // write bitmap to a file
-                    String fileName = FileUtil.getScreenShotsName(getApplicationContext());
+                    final String fileName = FileUtil.getScreenShotsName(getApplicationContext());
                     fos = new FileOutputStream(fileName);
                     bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos);
                     Toast.makeText(getApplicationContext(), "screenshot captured", Toast.LENGTH_SHORT).show();
-                    CommonUtils.refreshMediaScanner(getApplicationContext(), new File(fileName));
+                    CommonUtils.mediaScan(getApplicationContext(), new File(fileName));
                     onBack();
                 }
 

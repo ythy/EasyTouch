@@ -33,6 +33,7 @@ import com.mx.easytouch.utils.TimeCount;
 import com.mx.easytouch.activity.FuncActivity;
 import com.mx.easytouch.R;
 
+import java.io.File;
 import java.util.Date;
 
 public class FxService extends Service {
@@ -385,6 +386,9 @@ public class FxService extends Service {
 	private void onShow() {
 		Intent intent = new Intent(FxService.this, FuncActivity.class);
 		intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+		intent.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
+		intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
+		intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
 		intent.putExtra("position_x", wmParams.x);
 		intent.putExtra("position_y", wmParams.y);
 		intent.putExtra("timecount", TimeCount.getInstance().getHackCount());
