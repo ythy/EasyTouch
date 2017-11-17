@@ -24,6 +24,7 @@ import android.view.WindowManager;
 import android.widget.Toast;
 
 import com.mx.easytouch.activity.FuncActivity;
+import com.mx.easytouch.utils.CommonUtils;
 import com.mx.easytouch.utils.FileUtil;
 
 import java.io.File;
@@ -161,6 +162,7 @@ public class ScreenshotService extends Service {
                     fos = new FileOutputStream(fileName);
                     bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos);
                     Toast.makeText(getApplicationContext(), "screenshot captured", Toast.LENGTH_SHORT).show();
+                    CommonUtils.refreshMediaScanner(getApplicationContext(), new File(fileName));
                     onBack();
                 }
 

@@ -1,9 +1,15 @@
 package com.mx.easytouch.utils;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
+import android.net.Uri;
+import android.os.Build;
+import android.os.Environment;
+
+import java.io.File;
 
 /**
  * Created by maoxin on 2017/11/10.
@@ -46,5 +52,18 @@ public class CommonUtils {
 
     public static boolean isSystemUpdateApp(PackageInfo pInfo) {
         return ((pInfo.applicationInfo.flags & ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0);
+    }
+
+    public static void refreshMediaScanner(Context context, File file) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {//如果是4.4及以上版本
+            Intent mediaScanIntent = new Intent(
+                    Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+            Uri contentUri = Uri.fromFile(file); //out is your output file
+            mediaScanIntent.setData(contentUri);
+            context.sendBroadcast(mediaScanIntent);
+        } else {
+            context.sendBroadcast(new Intent(Intent.ACTION_MEDIA_MOUNTED,
+                    Uri.parse("file://" + Environment.getExternalStorageDirectory())));
+        }
     }
 }
