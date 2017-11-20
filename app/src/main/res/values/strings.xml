@@ -14,6 +14,7 @@
     <string name="type_recent">最近打开的程序</string>
     <string name="type_notification">通知栏显示</string>
     <string name="type_volumn">音量控制</string>
+    <string name="type_torch">手电筒</string>
     <string name="type_favorite">常用应用</string>
     <string name="copyright">毛欣出品 球球最棒！！</string>
 </resources>

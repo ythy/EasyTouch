@@ -17,4 +17,5 @@ public class Settings {
     public static String SP_NOTIFICATION = "SP_NOTIFICATION";
     public static String SP_FAVORITE = "SP_FAVORITE";
     public static String SP_VOLUMN = "SP_VOLUMN";
+    public static String SP_TORCH= "SP_TORCH";
 }
