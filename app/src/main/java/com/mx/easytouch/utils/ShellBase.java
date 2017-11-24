@@ -49,7 +49,7 @@ public class ShellBase{
      * @param cmd
      */
     public void execShellCmd(String cmd){
-        Log.d("FxService", cmd);
+        Log.e("FxService", cmd);
         OutputStream outputStream = null;
         DataOutputStream dataOutputStream = null;
         Process process = null;

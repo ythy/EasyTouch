@@ -10,6 +10,8 @@ package com.mx.easytouch.utils;
 public class TimeCount{
 
     private int mHackThreadCount;
+    private int mHackThreadMaxCount;
+
     private static TimeCount tc = null;
 
     public static TimeCount getInstance(){
@@ -26,7 +28,12 @@ public class TimeCount{
         return mHackThreadCount;
     }
 
+    public int getHackMaxCount() {
+        return mHackThreadMaxCount;
+    }
+
     public void setHackCount(int mHackThreadCount) {
+        this.mHackThreadMaxCount = mHackThreadCount;
         this.mHackThreadCount = mHackThreadCount;
     }
 

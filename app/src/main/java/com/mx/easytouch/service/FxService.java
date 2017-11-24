@@ -2,16 +2,17 @@ package com.mx.easytouch.service;
 
 import android.app.Notification;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.PixelFormat;
 import android.graphics.Point;
 import android.graphics.PointF;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
+import android.os.PowerManager;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Gravity;
@@ -33,7 +34,6 @@ import com.mx.easytouch.utils.TimeCount;
 import com.mx.easytouch.activity.FuncActivity;
 import com.mx.easytouch.R;
 
-import java.io.File;
 import java.util.Date;
 
 public class FxService extends Service {
@@ -52,7 +52,7 @@ public class FxService extends Service {
 
 	private Notification  floatNotification = null;
 	private static final int  NOTIFICATION_ID = 45148;
-
+	private PowerManager.WakeLock mWakeLock;
 	ShellBase mShellBase;
 
 	@Override
@@ -74,7 +74,7 @@ public class FxService extends Service {
 				if(intent.getBooleanExtra("autoclick", false)){
 					createFloatView(0, 0);
 					this.startAutoClick(intent.getIntExtra("position_x", 0), intent.getIntExtra("position_y", 0),
-							intent.getIntExtra("frequency", 10));
+							intent.getIntExtra("frequency", 10), intent.getIntArrayExtra("timer"));
 				}else if(intent.getStringExtra("hyAuto") != null){
 					createFloatView(intent.getIntExtra("position_x", 0), intent.getIntExtra("position_y", 0));
 					this.startHYAuto(intent.getStringExtra("hyAuto"));
@@ -207,8 +207,6 @@ public class FxService extends Service {
 			super.handleMessage(msg);
 			if(msg.what == 1){
 				mTvFloat.setText(String.valueOf(msg.arg1));
-				mShellBase.execShellCmd("input tap " + (msg.getData().getInt("x") + mBtnFloat.getMeasuredWidth()/2) + " " +
-						(msg.getData().getInt("y") + mBtnFloat.getMeasuredHeight()/2 + getStatusBarHeight() ));
 			}
 		}
 	};
@@ -223,26 +221,57 @@ public class FxService extends Service {
 		}
 	};
 
-	private void startAutoClick(final int x, final int y, final int frequency){
+	private void startAutoClick(final int x, final int y, final int frequency, final int[] timer){
+		mWakeLock = ((PowerManager) getApplicationContext().getSystemService(Context.POWER_SERVICE))
+				.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK, getClass().getName());
+		mWakeLock.acquire();
+		if(timer == null){
+			startAutoClickRunnable(x,y,frequency,Integer.MAX_VALUE);
+		}else{
+			Date now = new Date();
+			long timerDate = new Date(now.getYear(), now.getMonth(), now.getDate(), timer[0], timer[1], timer[2]).getTime();
+			long total = timerDate - now.getTime();
+			mTvFloat.setText(timer[0] + ":" + timer[1] + ":" + timer[2]);
+			if(total > 0){
+				new Handler().postDelayed(new Runnable() {
+					@Override
+					public void run() {
+						startAutoClickRunnable(x,y,frequency, (int) (90 * frequency));
+					}
+				}, total);
+			}
+		}
+
+	}
+
+	private void startAutoClickRunnable(final int x, final int y, final int frequency, final int max){
 		try {
-			TimeCount.getInstance().setHackCount(Integer.MAX_VALUE);
+			TimeCount.getInstance().setHackCount(max);
 			new Thread(new Runnable() {
 				@Override
 				public void run() {
 					while(TimeCount.getInstance().subtractCount() > 0){
-						Message msg = Message.obtain();
-						msg.arg1 = Integer.MAX_VALUE - TimeCount.getInstance().getHackCount();
-						Bundle data = new Bundle();
-						data.putInt("x", x);
-						data.putInt("y", y);
-						msg.setData(data);
-						msg.what = 1;
-						clickHandler.sendMessage(msg);
+						if(TimeCount.getInstance().getHackCount() % frequency == 0){
+							Message msg = Message.obtain();
+							msg.arg1 = max - TimeCount.getInstance().getHackCount();
+							Bundle data = new Bundle();
+							data.putInt("x", x);
+							data.putInt("y", y);
+							msg.setData(data);
+							msg.what = 1;
+							clickHandler.sendMessage(msg);
+						}
+						mShellBase.execShellCmd("input tap " + (x + mBtnFloat.getMeasuredWidth()/2) + " " +
+								(y + mBtnFloat.getMeasuredHeight()/2 + getStatusBarHeight() ));
 						try {
 							Thread.sleep(1000/frequency);
 						} catch (InterruptedException e) {
 							e.printStackTrace();
 						}
+					}
+					if(TimeCount.getInstance().getHackCount() <= 0){
+						TimeCount.getInstance().setHackCount(1);
+						onShow();
 					}
 				}
 			}
@@ -406,6 +435,9 @@ public class FxService extends Service {
 		if (mFloatLayout != null) {
 			// 移除悬浮窗口
 			mWindowManager.removeView(mFloatLayout);
+		}
+		if(mWakeLock != null){
+			mWakeLock.release();
 		}
 	}
 

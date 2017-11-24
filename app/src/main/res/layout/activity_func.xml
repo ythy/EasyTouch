@@ -45,14 +45,10 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal">
-                    <EditText
-                        android:id="@+id/etClick"
-                        android:text="10"
-                        android:gravity="left|bottom"
-                        android:textSize="12sp"
-                        android:inputType="number"
-                        android:layout_width="45dp"
-                        android:layout_height="30dp" />
+                    <TextView
+                        android:id="@+id/tvAutoClick"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
                 </LinearLayout>
             </LinearLayout>
             <LinearLayout

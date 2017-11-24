@@ -37,9 +37,11 @@ import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.Spinner;
+import android.widget.TextView;
 
 import com.mx.easytouch.R;
 import com.mx.easytouch.db.Providerdata;
+import com.mx.easytouch.dialog.DialogAutoClick;
 import com.mx.easytouch.service.FxService;
 import com.mx.easytouch.service.ScreenshotService;
 import com.mx.easytouch.utils.CommonUtils;
@@ -47,6 +49,7 @@ import com.mx.easytouch.utils.DBHelper;
 import com.mx.easytouch.vo.InstallPackage;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
@@ -62,8 +65,13 @@ import butterknife.OnTouch;
 
 public class FuncActivity extends Activity {
 
-    @BindView(R.id.etClick)
-    EditText etClick;
+    @BindView(R.id.tvAutoClick)
+    TextView tvClick;
+
+    @OnClick(R.id.tvAutoClick)
+    void onAutoClicSetkBtnClickHandler(View v){
+        DialogAutoClick.show(FuncActivity.this, mainHandler, mAutoClickDuration, mAutoClickTime);
+    }
 
     @OnClick(R.id.ll_parent)
     void onllParentClickHandler(View v){
@@ -140,6 +148,10 @@ public class FuncActivity extends Activity {
     public static final String TAG = FuncActivity.class.getName();
     private int mPx;
     private int mPy;
+
+    private int mAutoClickDuration = 20;
+    private int[] mAutoClickTime = new int[]{7,18,10};
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -180,8 +192,10 @@ public class FuncActivity extends Activity {
         });
 
 
-        if(CommonUtils.getSPType(this, com.mx.easytouch.utils.Settings.SP_AUTO_CLICK))
+        if(CommonUtils.getSPType(this, com.mx.easytouch.utils.Settings.SP_AUTO_CLICK)){
             llAutoclick.setVisibility(View.VISIBLE);
+            tvClick.setText(mAutoClickDuration + " " + ( mAutoClickTime == null ? "" : mAutoClickTime[0] + ":"  + mAutoClickTime[1] ) );
+        }
         else
             llAutoclick.setVisibility(View.GONE);
 
@@ -330,7 +344,8 @@ public class FuncActivity extends Activity {
         intent.putExtra("position_x", mPx);
         intent.putExtra("position_y", mPy);
         intent.putExtra("autoclick", true);
-        intent.putExtra("frequency", Integer.parseInt(String.valueOf(etClick.getText())));
+        intent.putExtra("frequency", mAutoClickDuration);
+        intent.putExtra("timer", mAutoClickTime);
         startService(intent);
         this.finish();
     }
@@ -373,6 +388,11 @@ public class FuncActivity extends Activity {
             }else if(msg.what == 3){
                 List<InstallPackage> current = (List<InstallPackage>) msg.obj;
                 setFavAppList(current);
+            }else if(msg.what == 4){
+                Bundle data = msg.getData();
+                mAutoClickDuration = data.getInt("duration");
+                mAutoClickTime = data.getIntArray("timer");
+                tvClick.setText(mAutoClickDuration + " " + ( mAutoClickTime == null ? "" : mAutoClickTime[0] + ":"  + mAutoClickTime[1] ) );
             }
         }
     };
