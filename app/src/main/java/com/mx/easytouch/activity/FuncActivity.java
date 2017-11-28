@@ -149,8 +149,8 @@ public class FuncActivity extends Activity {
     private int mPx;
     private int mPy;
 
-    private int mAutoClickDuration = 20;
-    private int[] mAutoClickTime = new int[]{7,18,10};
+    private int mAutoClickDuration = 10;
+    private int[] mAutoClickTime = new int[]{7,18,00};
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

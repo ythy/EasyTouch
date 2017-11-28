@@ -201,16 +201,6 @@ public class FxService extends Service {
 
 	}
 
-	Handler clickHandler  = new Handler(){
-		@Override
-		public void handleMessage(Message msg) {
-			super.handleMessage(msg);
-			if(msg.what == 1){
-				mTvFloat.setText(String.valueOf(msg.arg1));
-			}
-		}
-	};
-
 	Handler hyHandler  = new Handler(){
 		@Override
 		public void handleMessage(Message msg) {
@@ -221,13 +211,17 @@ public class FxService extends Service {
 		}
 	};
 
-	private void startAutoClick(final int x, final int y, final int frequency, final int[] timer){
-		mWakeLock = ((PowerManager) getApplicationContext().getSystemService(Context.POWER_SERVICE))
-				.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK, getClass().getName());
-		mWakeLock.acquire();
+	private void startAutoClick(int x, int y, int frequency, int[] timer){
+		mAutoClickX = x;
+		mAutoClickY = y;
+		mAutoFrequency = frequency > 10 ? 10 : frequency;
+
 		if(timer == null){
-			startAutoClickRunnable(x,y,frequency,Integer.MAX_VALUE);
+			startAutoClickRunnable((int) (60 * 10 * mAutoFrequency) );
 		}else{
+			mWakeLock = ((PowerManager) getApplicationContext().getSystemService(Context.POWER_SERVICE))
+					.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK, getClass().getName());
+			mWakeLock.acquire();
 			Date now = new Date();
 			long timerDate = new Date(now.getYear(), now.getMonth(), now.getDate(), timer[0], timer[1], timer[2]).getTime();
 			long total = timerDate - now.getTime();
@@ -236,7 +230,7 @@ public class FxService extends Service {
 				new Handler().postDelayed(new Runnable() {
 					@Override
 					public void run() {
-						startAutoClickRunnable(x,y,frequency, (int) (90 * frequency));
+						startAutoClickRunnable((int) (90 * mAutoFrequency));
 					}
 				}, total);
 			}
@@ -244,40 +238,47 @@ public class FxService extends Service {
 
 	}
 
-	private void startAutoClickRunnable(final int x, final int y, final int frequency, final int max){
-		try {
-			TimeCount.getInstance().setHackCount(max);
-			new Thread(new Runnable() {
-				@Override
-				public void run() {
-					while(TimeCount.getInstance().subtractCount() > 0){
-						if(TimeCount.getInstance().getHackCount() % frequency == 0){
-							Message msg = Message.obtain();
-							msg.arg1 = max - TimeCount.getInstance().getHackCount();
-							Bundle data = new Bundle();
-							data.putInt("x", x);
-							data.putInt("y", y);
-							msg.setData(data);
-							msg.what = 1;
-							clickHandler.sendMessage(msg);
-						}
-						mShellBase.execShellCmd("input tap " + (x + mBtnFloat.getMeasuredWidth()/2) + " " +
-								(y + mBtnFloat.getMeasuredHeight()/2 + getStatusBarHeight() ));
-						try {
-							Thread.sleep(1000/frequency);
-						} catch (InterruptedException e) {
-							e.printStackTrace();
-						}
-					}
-					if(TimeCount.getInstance().getHackCount() <= 0){
-						TimeCount.getInstance().setHackCount(1);
-						onShow();
-					}
+	int mAutoClickX;
+	int mAutoClickY;
+	int mAutoFrequency;
+	Runnable mAutoClickRunnable = new Runnable() {
+		@Override
+		public void run() {
+			if(TimeCount.getInstance().subtractCount() >= 0){
+				mShellBase.execShellCmd("input tap " + (mAutoClickX + mBtnFloat.getMeasuredWidth()/2) + " " +
+						(mAutoClickY + mBtnFloat.getMeasuredHeight()/2 + getStatusBarHeight() ));
+				if(TimeCount.getInstance().getHackCount() % mAutoFrequency == 0){
+					Message msg = Message.obtain();
+					msg.what = 1;
+					msg.arg1 = TimeCount.getInstance().getHackMaxCount() - TimeCount.getInstance().getHackCount();
+					mAutoclickHandler.sendMessage(msg);
+				}
+				if(TimeCount.getInstance().getHackCount() <= 0){
+					TimeCount.getInstance().setHackCount(1);
+					onShow();
 				}
 			}
-			).start();;
-		} catch (Throwable t) {
-			t.printStackTrace();
+		}
+	};
+
+	Handler mAutoclickHandler = new Handler(){
+
+		@Override
+		public void handleMessage(Message msg) {
+			super.handleMessage(msg);
+			if(msg.what == 1){
+				mTvFloat.setText(String.valueOf(msg.arg1));
+			}
+		}
+	};
+
+
+	private void startAutoClickRunnable(int max){
+		TimeCount.getInstance().setHackCount(max);
+		int i = 0;
+		while(i++ < max){
+			mAutoclickHandler.postDelayed(mAutoClickRunnable,
+					1000/mAutoFrequency * i);
 		}
 	}
 
@@ -439,6 +440,7 @@ public class FxService extends Service {
 		if(mWakeLock != null){
 			mWakeLock.release();
 		}
+		mAutoclickHandler.removeCallbacksAndMessages(null);
 	}
 
 	private  int getStatusBarHeight() {
