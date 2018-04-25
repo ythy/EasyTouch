@@ -45,6 +45,14 @@ public class MainActivity extends Activity {
             startActivity(intent);
     }
 
+    @OnClick(R.id.btnSetApp)
+    void onBtnSetAppClickHandler(View v){
+        Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_SETTINGS);
+        if(intent != null)
+            startActivity(intent);
+    }
+
+
     @OnCheckedChanged({R.id.chkAuto, R.id.chkHY, R.id.chkShot, R.id.chkRecent, R.id.chkNotification, R.id.chkFavorite, R.id.chkVolumn })
     void onCheckedAutoChanged(CompoundButton arg0, boolean arg1) {
         CommonUtils.setSPType(this, arg0.getTag().toString(), arg1);
