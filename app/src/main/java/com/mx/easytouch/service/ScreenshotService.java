@@ -23,7 +23,6 @@ import android.util.Log;
 import android.view.WindowManager;
 import android.widget.Toast;
 
-import com.mx.easytouch.activity.FuncActivity;
 import com.mx.easytouch.utils.CommonUtils;
 import com.mx.easytouch.utils.FileUtil;
 

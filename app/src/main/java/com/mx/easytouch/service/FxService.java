@@ -8,7 +8,6 @@ import android.graphics.PixelFormat;
 import android.graphics.Point;
 import android.graphics.PointF;
 import android.os.Build;
-import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
@@ -31,7 +30,6 @@ import com.mx.easytouch.utils.CommonUtils;
 import com.mx.easytouch.utils.Settings;
 import com.mx.easytouch.utils.ShellBase;
 import com.mx.easytouch.utils.TimeCount;
-import com.mx.easytouch.activity.FuncActivity;
 import com.mx.easytouch.R;
 
 import java.util.Date;
@@ -130,7 +128,7 @@ public class FxService extends Service {
 
 		LayoutInflater inflater = LayoutInflater.from(getApplication());
 		// 获取浮动窗口视图所在布局
-		mFloatLayout = (FrameLayout) inflater.inflate(R.layout.widow_float,
+		mFloatLayout = (FrameLayout) inflater.inflate(R.layout.window_float,
 				null);
 		// 添加mFloatLayout
 		mWindowManager.addView(mFloatLayout, wmParams);
@@ -414,7 +412,7 @@ public class FxService extends Service {
 	}
 
 	private void onShow() {
-		Intent intent = new Intent(FxService.this, FuncActivity.class);
+		Intent intent = new Intent(FxService.this, FuncService.class);
 		intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 		intent.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
 		intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
@@ -423,7 +421,7 @@ public class FxService extends Service {
 		intent.putExtra("position_y", wmParams.y);
 		intent.putExtra("timecount", TimeCount.getInstance().getHackCount());
 		TimeCount.getInstance().setHackCount(0);
-		startActivity(intent);
+		startService(intent);
 		stopSelf();
 	}
 

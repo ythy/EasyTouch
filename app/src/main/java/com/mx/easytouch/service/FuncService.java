@@ -1,35 +1,28 @@
-package com.mx.easytouch.activity;
+package com.mx.easytouch.service;
 
 import android.annotation.SuppressLint;
-import android.app.ActionBar;
-import android.app.Activity;
 import android.app.ActivityManager;
-import android.app.Notification;
+import android.app.Service;
 import android.app.usage.UsageStats;
 import android.app.usage.UsageStatsManager;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.ApplicationInfo;
-import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.graphics.PixelFormat;
 import android.media.AudioManager;
-import android.media.projection.MediaProjectionManager;
 import android.os.Build;
-import android.os.Handler;
-import android.os.Message;
-import android.provider.Settings;
-import android.util.Log;
-import android.widget.ArrayAdapter;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.view.KeyEvent;
+import android.os.Handler;
+import android.os.IBinder;
+import android.os.Message;
+import android.support.annotation.Nullable;
+import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.Window;
-import android.widget.Button;
-import android.widget.EditText;
+import android.view.WindowManager;
+import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -40,37 +33,41 @@ import android.widget.Spinner;
 import android.widget.TextView;
 
 import com.mx.easytouch.R;
+import com.mx.easytouch.activity.MediaActivity;
 import com.mx.easytouch.db.Providerdata;
 import com.mx.easytouch.dialog.DialogAutoClick;
-import com.mx.easytouch.service.FxService;
-import com.mx.easytouch.service.ScreenshotService;
 import com.mx.easytouch.utils.CommonUtils;
 import com.mx.easytouch.utils.DBHelper;
 import com.mx.easytouch.vo.InstallPackage;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Date;
-import java.util.Iterator;
 import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
-import butterknife.OnItemSelected;
 import butterknife.OnTouch;
 
-public class FuncActivity extends Activity {
+/**
+ * Created by maoxin on 2018/5/10.
+ */
+
+public class FuncService extends Service {
+
+    // 定义浮动窗口布局
+    FrameLayout mFloatLayout;
+    WindowManager.LayoutParams wmParams;
+    // 创建浮动窗口设置布局参数的对象
+    WindowManager mWindowManager;
 
     @BindView(R.id.tvAutoClick)
     TextView tvClick;
 
     @OnClick(R.id.tvAutoClick)
     void onAutoClicSetkBtnClickHandler(View v){
-        DialogAutoClick.show(FuncActivity.this, mainHandler, mAutoClickDuration, mAutoClickTime);
+        DialogAutoClick.show(FuncService.this, mainHandler, mAutoClickDuration, mAutoClickTime);
     }
 
     @OnClick(R.id.ll_parent)
@@ -145,31 +142,67 @@ public class FuncActivity extends Activity {
 
     DBHelper mDBHelper;
     public static final int REQUEST_MEDIA_PROJECTION = 155;
-    public static final String TAG = FuncActivity.class.getName();
+    public static final String TAG = FuncService.class.getName();
     private int mPx;
     private int mPy;
 
     private int mAutoClickDuration = 10;
     private int[] mAutoClickTime = new int[]{7,18,00};
 
+
+    @Nullable
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        mPx = getIntent().getIntExtra("position_x", 0);
-        mPy = getIntent().getIntExtra("position_y", 0);
+    public IBinder onBind(Intent intent) {
+        return null;
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        mPx = intent.getIntExtra("position_x", 0);
+        mPy = intent.getIntExtra("position_y", 0);
         mDBHelper = new DBHelper(this, Providerdata.DATABASE_NAME,
                 null, Providerdata.DATABASE_VERSION);
-        if(getIntent().getIntExtra("timecount", 0) > 0)
+        if(intent.getIntExtra("timecount", 0) > 0)
             onBack();
         else{
-            requestWindowFeature(Window.FEATURE_NO_TITLE);
-            setContentView(R.layout.activity_func);
-            ButterKnife.bind(this);
+            setWindow();
             setLayout();
         }
+        return Service.START_NOT_STICKY;
+    }
+
+    private void setWindow(){
+        wmParams = new WindowManager.LayoutParams();
+        // 获取的是WindowManagerImpl.CompatModeWrapper
+        mWindowManager = (WindowManager) getApplication().getSystemService(
+                getApplication().WINDOW_SERVICE);
+        // 设置window type
+        if(android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT)
+            wmParams.type = WindowManager.LayoutParams.TYPE_TOAST;
+        else
+            wmParams.type = WindowManager.LayoutParams.TYPE_SYSTEM_ALERT;
+        // 设置图片格式，效果为背景透明
+        wmParams.format = PixelFormat.RGBA_8888;
+        // 设置浮动窗口不可聚焦（实现操作除浮动窗口外的其他可见窗口的操作）
+        wmParams.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
+        // 调整悬浮窗显示的停靠位置为左侧置顶
+        wmParams.gravity = Gravity.LEFT | Gravity.TOP;
+        // 以屏幕左上角为原点，设置x、y初始值，相对于gravity
+
+        // 设置悬浮窗口长宽数据
+        wmParams.width = WindowManager.LayoutParams.MATCH_PARENT;
+        wmParams.height = WindowManager.LayoutParams.MATCH_PARENT;
+
+        LayoutInflater inflater = LayoutInflater.from(getApplication());
+        // 获取浮动窗口视图所在布局
+        mFloatLayout = (FrameLayout) inflater.inflate(R.layout.window_func,
+                null);
+        // 添加mFloatLayout
+        mWindowManager.addView(mFloatLayout, wmParams);
     }
 
     private void setLayout(){
+        ButterKnife.bind(this, mFloatLayout);
         llmain.post(new Runnable() {
             @Override
             public void run() {
@@ -331,49 +364,43 @@ public class FuncActivity extends Activity {
     }
 
 
-    public void onBack() {
-        Intent intent = new Intent(FuncActivity.this, FxService.class);
-        intent.putExtra("position_x", mPx);
-        intent.putExtra("position_y", mPy);
-        startService(intent);
-        this.finish();
-    }
 
     public void onBackAutoClick() {
-        Intent intent = new Intent(FuncActivity.this, FxService.class);
+        Intent intent = new Intent(FuncService.this, FxService.class);
         intent.putExtra("position_x", mPx);
         intent.putExtra("position_y", mPy);
         intent.putExtra("autoclick", true);
         intent.putExtra("frequency", mAutoClickDuration);
         intent.putExtra("timer", mAutoClickTime);
         startService(intent);
-        this.finish();
+        this.stopSelf();
     }
 
     public void onBackHackClick() {
 
-        Intent intent = new Intent(FuncActivity.this, FxService.class);
+        Intent intent = new Intent(FuncService.this, FxService.class);
         intent.putExtra("position_x", mPx);
         intent.putExtra("position_y", mPy);
         intent.putExtra("hyAuto", spinnerName.getSelectedItem().toString());
         startService(intent);
-        this.finish();
+        this.stopSelf();
     }
 
     public void onBackScreenShotClick() {
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP){
-            Intent intent = new Intent(FuncActivity.this, MediaActivity.class);
+            Intent intent = new Intent(FuncService.this, MediaActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             intent.putExtra("position_x", mPx);
             intent.putExtra("position_y", mPy);
             startActivity(intent);
         }else{
-            Intent intent = new Intent(FuncActivity.this, FxService.class);
+            Intent intent = new Intent(FuncService.this, FxService.class);
             intent.putExtra("position_x", mPx);
             intent.putExtra("position_y", mPy);
             intent.putExtra("screenshot", true);
             startService(intent);
         }
-        this.finish();
+        this.stopSelf();
     }
 
     Handler mainHandler = new Handler(){
@@ -432,19 +459,21 @@ public class FuncActivity extends Activity {
         }
     }
 
-    @Override
-    public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if (KeyEvent.KEYCODE_BACK == keyCode) {
-            return true;
-        }
-        return super.onKeyDown(keyCode, event);
+    public void onBack() {
+        Intent intent = new Intent(FuncService.this, FxService.class);
+        intent.putExtra("position_x", mPx);
+        intent.putExtra("position_y", mPy);
+        startService(intent);
+        this.stopSelf();
     }
 
     @Override
-    protected void onDestroy() {
+    public void onDestroy() {
         super.onDestroy();
-        mDBHelper.Close();
+        mDBHelper.close();
+        if (mFloatLayout != null) {
+            // 移除悬浮窗口
+            mWindowManager.removeView(mFloatLayout);
+        }
     }
-
-
 }
