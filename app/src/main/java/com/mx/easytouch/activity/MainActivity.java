@@ -22,6 +22,7 @@ import android.widget.TextView;
 import com.mx.easytouch.R;
 import com.mx.easytouch.adapter.FavAppAdapter;
 import com.mx.easytouch.db.Providerdata;
+import com.mx.easytouch.receiver.ActionReceiver;
 import com.mx.easytouch.service.FxService;
 import com.mx.easytouch.utils.CommonUtils;
 import com.mx.easytouch.utils.DBHelper;
@@ -239,9 +240,11 @@ public class MainActivity extends Activity {
 
     private void showAlertWindows()
     {
-        Intent intent = new Intent(MainActivity.this, FxService.class);
-        //启动FxService
-        startService(intent);
+        ActionReceiver receiver = new ActionReceiver();
+        receiver.setAlarm(this);
+//        Intent intent = new Intent(MainActivity.this, FxService.class);
+//        //启动FxService
+//        startService(intent);
     }
 
     @Override

@@ -26,6 +26,7 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.mx.easytouch.receiver.ActionReceiver;
 import com.mx.easytouch.utils.CommonUtils;
 import com.mx.easytouch.utils.Settings;
 import com.mx.easytouch.utils.ShellBase;
@@ -52,6 +53,7 @@ public class FxService extends Service {
 	private static final int  NOTIFICATION_ID = 45148;
 	private PowerManager.WakeLock mWakeLock;
 	ShellBase mShellBase;
+	private Boolean mEndSelf = false;//个人关闭与否
 
 	@Override
 	public void onCreate() {
@@ -159,8 +161,10 @@ public class FxService extends Service {
 					case MotionEvent.ACTION_UP:
 						if(!moveFlag)
 						{
-							if(event.getEventTime() - lastEventTime > mLongPressTime)
+							if(event.getEventTime() - lastEventTime > mLongPressTime){
+								mEndSelf = true;
 								stopSelf();
+							}
 							else
 								onShow();
 						}
@@ -422,6 +426,7 @@ public class FxService extends Service {
 		intent.putExtra("timecount", TimeCount.getInstance().getHackCount());
 		TimeCount.getInstance().setHackCount(0);
 		startService(intent);
+		this.mEndSelf = true;
 		stopSelf();
 	}
 
@@ -439,6 +444,12 @@ public class FxService extends Service {
 			mWakeLock.release();
 		}
 		mAutoclickHandler.removeCallbacksAndMessages(null);
+
+		if(!mEndSelf){
+			Intent intent = new Intent(this, ActionReceiver.class);
+			intent.setAction(ActionReceiver.ACTION_ALARM);
+			this.sendBroadcast(intent);
+		}
 	}
 
 	private  int getStatusBarHeight() {

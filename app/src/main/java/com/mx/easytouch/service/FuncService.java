@@ -465,15 +465,15 @@ public class FuncService extends Service {
         intent.putExtra("position_y", mPy);
         startService(intent);
         this.stopSelf();
+        if (mFloatLayout != null) {
+            // 移除悬浮窗口
+            mWindowManager.removeView(mFloatLayout);
+        }
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
         mDBHelper.close();
-        if (mFloatLayout != null) {
-            // 移除悬浮窗口
-            mWindowManager.removeView(mFloatLayout);
-        }
     }
 }
