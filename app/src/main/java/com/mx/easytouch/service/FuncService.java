@@ -475,5 +475,9 @@ public class FuncService extends Service {
     public void onDestroy() {
         super.onDestroy();
         mDBHelper.close();
+        if (mFloatLayout != null) {
+            // 移除悬浮窗口
+            mWindowManager.removeView(mFloatLayout);
+        }
     }
 }

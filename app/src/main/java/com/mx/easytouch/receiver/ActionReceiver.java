@@ -21,13 +21,14 @@ public class ActionReceiver extends BroadcastReceiver {
 
 	@Override
 	public void onReceive(Context context, Intent intent) {
+		Log.e(TAG, "onReceive " + (intent.getAction() == null ? "none" : intent.getAction() ) );
 	 	if(intent.getAction().equals(Intent.ACTION_USER_PRESENT) || intent.getAction().equals(Intent.ACTION_BOOT_COMPLETED) ||
 				intent.getAction().equals(ACTION_ALARM)) {
 			this.startFloatService(context);
 		}
 	}
 
-	public void setAlarm(Context context)
+	public static void setFloatButton(Context context)
 	{
 		Intent intent = new Intent(context, ActionReceiver.class);
 		intent.setAction(ACTION_ALARM);

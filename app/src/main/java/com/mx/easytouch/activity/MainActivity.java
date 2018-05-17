@@ -240,8 +240,7 @@ public class MainActivity extends Activity {
 
     private void showAlertWindows()
     {
-        ActionReceiver receiver = new ActionReceiver();
-        receiver.setAlarm(this);
+        ActionReceiver.setFloatButton(this);
 //        Intent intent = new Intent(MainActivity.this, FxService.class);
 //        //启动FxService
 //        startService(intent);

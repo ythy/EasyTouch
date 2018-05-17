@@ -431,6 +431,14 @@ public class FxService extends Service {
 	}
 
 	@Override
+	public void onTaskRemoved(Intent rootIntent) {
+		super.onTaskRemoved(rootIntent);
+		if(!mEndSelf){
+			ActionReceiver.setFloatButton(this);
+		}
+	}
+
+	@Override
 	public void onDestroy() {
 		// TODO Auto-generated method stub
 		super.onDestroy();
@@ -446,9 +454,7 @@ public class FxService extends Service {
 		mAutoclickHandler.removeCallbacksAndMessages(null);
 
 		if(!mEndSelf){
-			Intent intent = new Intent(this, ActionReceiver.class);
-			intent.setAction(ActionReceiver.ACTION_ALARM);
-			this.sendBroadcast(intent);
+			ActionReceiver.setFloatButton(this);
 		}
 	}
 
