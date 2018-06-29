@@ -90,6 +90,11 @@
             android:name="com.mx.easytouch.service.TorchService"
             android:enabled="true">
         </service>
+        <service android:name=".service.FavorAppService" >
+            <intent-filter>
+                <action android:name="com.mx.easytouch.service.FavorAppService" />
+            </intent-filter>
+        </service>
 
     </application>
 
