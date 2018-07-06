@@ -18,6 +18,7 @@ import android.widget.CompoundButton;
 import android.widget.ListView;
 import android.widget.SeekBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.mx.easytouch.R;
 import com.mx.easytouch.adapter.FavAppAdapter;
@@ -27,6 +28,8 @@ import com.mx.easytouch.service.FxService;
 import com.mx.easytouch.utils.CommonUtils;
 import com.mx.easytouch.utils.DBHelper;
 import com.mx.easytouch.utils.Settings;
+import com.mx.easytouch.utils.StepConnection;
+import com.mx.easytouch.utils.StepCountReporter;
 import com.mx.easytouch.vo.InstallPackage;
 
 import java.util.ArrayList;
@@ -94,7 +97,11 @@ public class MainActivity extends Activity {
     @BindView(R.id.tvSeekBarFlip)
     TextView tvSeekBarFlip;
 
+    @BindView(R.id.tvStepCount)
+    TextView tvStepCount;
+
     DBHelper mDBHelper;
+    StepConnection mStep;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -108,6 +115,14 @@ public class MainActivity extends Activity {
         mDBHelper = new DBHelper(this, Providerdata.DATABASE_NAME,
                 null, Providerdata.DATABASE_VERSION);
         refreshListView();
+
+        mStep = new StepConnection(this, new StepCountReporter.StepCountObserver() {
+            @Override
+            public void onChanged(int count) {
+                tvStepCount.setText("Step: " + String.valueOf(count));
+            }
+        });
+
     }
 
     private void initSlipSeekBar(){
@@ -250,5 +265,6 @@ public class MainActivity extends Activity {
     protected void onDestroy() {
         super.onDestroy();
         mDBHelper.Close();
+        mStep.disconnect();
     }
 }

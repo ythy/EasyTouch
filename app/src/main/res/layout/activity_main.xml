@@ -28,6 +28,11 @@
                     android:layout_height="wrap_content"
                     android:id="@+id/btnSetApp"
                     android:text="@string/appSet"/>
+                <TextView
+                    android:layout_marginLeft="10dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/tvStepCount"/>
             </LinearLayout>
 
             <LinearLayout
