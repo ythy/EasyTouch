@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:versionCode="6"
-    android:versionName="2.3.3"
+    android:versionName="2.3.4"
     package="com.mx.easytouch">
 
     <!-- 对外部存储设备的写入权限 -->
@@ -46,7 +46,6 @@
         </activity>
 
         <activity android:name=".activity.MediaActivity"
-            android:screenOrientation="portrait"
             android:theme="@android:style/Theme.Translucent">
         </activity>
 
