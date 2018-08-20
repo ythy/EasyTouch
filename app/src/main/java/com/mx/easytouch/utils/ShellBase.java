@@ -68,9 +68,11 @@ public class ShellBase{
             TimeCount.getInstance().setHackCount(0);
         }finally {
             try {
-                process.getOutputStream().close();
-                process.getErrorStream().close();
-                process.getInputStream().close();
+                if(process != null){
+                    process.getOutputStream().close();
+                    process.getErrorStream().close();
+                    process.getInputStream().close();
+                }
             } catch (IOException e) {
                 e.printStackTrace();
             }

@@ -32,6 +32,10 @@ public class TimeCount{
         return mHackThreadMaxCount;
     }
 
+    public int getStepCount(){
+        return mHackThreadMaxCount - mHackThreadCount;
+    }
+
     public void setHackCount(int mHackThreadCount) {
         this.mHackThreadMaxCount = mHackThreadCount;
         this.mHackThreadCount = mHackThreadCount;

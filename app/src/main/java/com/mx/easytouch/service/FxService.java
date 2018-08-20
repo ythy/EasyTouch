@@ -8,6 +8,7 @@ import android.graphics.PixelFormat;
 import android.graphics.Point;
 import android.graphics.PointF;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
@@ -26,6 +27,8 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.mx.easytouch.components.FXAutoClick;
+import com.mx.easytouch.components.FXJiangShan;
 import com.mx.easytouch.receiver.ActionReceiver;
 import com.mx.easytouch.utils.CommonUtils;
 import com.mx.easytouch.utils.Settings;
@@ -66,22 +69,44 @@ public class FxService extends Service {
 	}
 
 	@Override
-	public int onStartCommand(Intent intent, int flags, int startId) {
+	public int onStartCommand(Intent sIntent, int flags, int startId) {
 		mShellBase = new ShellBase();
+
 		if(mFloatLayout == null)
 		{
-			if(intent != null){
-				if(intent.getBooleanExtra("autoclick", false)){
+			if(sIntent != null && sIntent.getExtras() != null){
+				Bundle bundle = sIntent.getExtras();
+				int positionX = bundle.getInt("position_x", 0);
+				int positionY = bundle.getInt("position_y", 0);
+
+				if(bundle.getBoolean("autoclick", false)){
 					createFloatView(0, 0);
-					this.startAutoClick(intent.getIntExtra("position_x", 0), intent.getIntExtra("position_y", 0),
-							intent.getIntExtra("frequency", 10), intent.getIntArrayExtra("timer"));
-				}else if(intent.getStringExtra("hyAuto") != null){
-					createFloatView(intent.getIntExtra("position_x", 0), intent.getIntExtra("position_y", 0));
-					this.startHYAuto(intent.getStringExtra("hyAuto"));
-				}else if(intent.getBooleanExtra("screenshot", false)){
-					this.startScreenShot(intent.getIntExtra("position_x", 0), intent.getIntExtra("position_y", 0));
+					setWackLock();
+					new FXAutoClick(positionX +  mBtnFloat.getMeasuredWidth()/2,
+							positionY + mBtnFloat.getMeasuredHeight()/2 + getStatusBarHeight(),
+							bundle.getInt("frequency", 10), bundle.getIntArray("timer"), new FXAutoClick.AutoClickHandle() {
+						@Override
+						public void floatText(String input) {
+							mTvFloat.setText(input);
+						}
+						@Override
+						public void end() {
+							onShow();
+						}
+					});
+				}else if(bundle.getString("hyAuto") != null){
+					createFloatView(positionX, positionY);
+					setWackLock();
+					new FXJiangShan(new FXJiangShan.JSHandle() {
+						@Override
+						public void floatText(String input) {
+							mTvFloat.setText(input);
+						}
+					});
+				}else if(bundle.getBoolean("screenshot", false)){
+					this.startScreenShot(positionX, positionY);
 				}else
-					createFloatView(intent.getIntExtra("position_x", 0), intent.getIntExtra("position_y", 0));
+					createFloatView(positionX, positionY);
 			}
 			else
 				createFloatView(0, 0);
@@ -97,7 +122,7 @@ public class FxService extends Service {
 			startForeground(NOTIFICATION_ID, floatNotification);
 		}
 
-		if(intent.getBooleanExtra("screenshot", false))
+		if(sIntent.getExtras() != null  && sIntent.getExtras().getBoolean("screenshot", false))
 			return START_NOT_STICKY;
 		else
 			return START_REDELIVER_INTENT;
@@ -203,197 +228,10 @@ public class FxService extends Service {
 
 	}
 
-	Handler hyHandler  = new Handler(){
-		@Override
-		public void handleMessage(Message msg) {
-			super.handleMessage(msg);
-			if(msg.what == 1){
-				mTvFloat.setText(String.valueOf(msg.arg1));
-			}
-		}
-	};
-
-	private void startAutoClick(int x, int y, int frequency, int[] timer){
-		mAutoClickX = x;
-		mAutoClickY = y;
-		mAutoFrequency = frequency > 10 ? 10 : frequency;
-
-		if(timer == null){
-			startAutoClickRunnable((int) (60 * 10 * mAutoFrequency) );
-		}else{
-			mWakeLock = ((PowerManager) getApplicationContext().getSystemService(Context.POWER_SERVICE))
-					.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK, getClass().getName());
-			mWakeLock.acquire();
-			Date now = new Date();
-			long timerDate = new Date(now.getYear(), now.getMonth(), now.getDate(), timer[0], timer[1], timer[2]).getTime();
-			long total = timerDate - now.getTime();
-			mTvFloat.setText(timer[0] + ":" + timer[1] + ":" + timer[2]);
-			if(total > 0){
-				new Handler().postDelayed(new Runnable() {
-					@Override
-					public void run() {
-						startAutoClickRunnable((int) (90 * mAutoFrequency));
-					}
-				}, total);
-			}
-		}
-
-	}
-
-	int mAutoClickX;
-	int mAutoClickY;
-	int mAutoFrequency;
-	Runnable mAutoClickRunnable = new Runnable() {
-		@Override
-		public void run() {
-			if(TimeCount.getInstance().subtractCount() >= 0){
-				mShellBase.execShellCmd("input tap " + (mAutoClickX + mBtnFloat.getMeasuredWidth()/2) + " " +
-						(mAutoClickY + mBtnFloat.getMeasuredHeight()/2 + getStatusBarHeight() ));
-				if(TimeCount.getInstance().getHackCount() % mAutoFrequency == 0){
-					Message msg = Message.obtain();
-					msg.what = 1;
-					msg.arg1 = TimeCount.getInstance().getHackMaxCount() - TimeCount.getInstance().getHackCount();
-					mAutoclickHandler.sendMessage(msg);
-				}
-				if(TimeCount.getInstance().getHackCount() <= 0){
-					TimeCount.getInstance().setHackCount(1);
-					onShow();
-				}
-			}
-		}
-	};
-
-	Handler mAutoclickHandler = new Handler(){
-
-		@Override
-		public void handleMessage(Message msg) {
-			super.handleMessage(msg);
-			if(msg.what == 1){
-				mTvFloat.setText(String.valueOf(msg.arg1));
-			}
-		}
-	};
-
-
-	private void startAutoClickRunnable(int max){
-		TimeCount.getInstance().setHackCount(max);
-		int i = 0;
-		while(i++ < max){
-			mAutoclickHandler.postDelayed(mAutoClickRunnable,
-					1000/mAutoFrequency * i);
-		}
-	}
-
-	private void  startHYAuto(String type){
-		if("moyao".equals(type))
-			startMoyao();
-		else if("duilian".equals(type))
-			startDuilian();
-		else if("yigong".equals(type))
-			startYigong();
-	}
-
-	private void startMoyao(){
-		TimeCount.getInstance().setHackCount(Integer.MAX_VALUE);
-		final int duration = 3;
-		new Thread(new Runnable() {
-			@Override
-			public void run() {
-				int turn = duration;
-				mShellBase.sendKeyEventCode("chen gc");
-				mShellBase.sendKeyEventCode("e");
-				mShellBase.sendKeyEventCode("e");
-				mShellBase.sendKeyEventCode("n");
-				while(TimeCount.getInstance().subtractCount() > 0){
-					mShellBase.sendKeyEventCode("ask ping about job");
-					mShellBase.sendKeyEventCode("moyao", 8000);
-					if(--turn == 0){
-						turn = duration;
-						mShellBase.sendKeyEventCode("xiuxi beg", 3000);
-					}
-				}
-			}
-		}
-		).start();
-	}
-
-	private void startDuilian(){
-		TimeCount.getInstance().setHackCount(Integer.MAX_VALUE);
-		new Thread(new Runnable() {
-			@Override
-			public void run() {
-				mShellBase.sendKeyEventCode("remove all");
-				mShellBase.sendKeyEventCode("wear all");
-				while(TimeCount.getInstance().subtractCount() > 0){
-					setFloatText();
-					mShellBase.sendKeyEventCode("chen dl");
-					mShellBase.sendKeyEventCode("n");
-					mShellBase.sendKeyEventCode("n");
-					mShellBase.sendKeyEventCode("e");
-					mShellBase.sendKeyEventCode("n");
-					excuteDuilian(new DuilianJia());
-					excuteDuilian(new DuilianZhu());
-					excuteDuilian(new DuilianFu());
-					excuteDuilian(new DuilianWei());
-					mShellBase.sendKeyEventCode("xiuxi beg", 3000);
-				}
-			}
-		}
-		).start();
-	}
-
-	private void setFloatText(){
-		Message msg = Message.obtain();
-		msg.arg1 = Integer.MAX_VALUE - TimeCount.getInstance().getHackCount();
-		msg.what = 1;
-		hyHandler.sendMessage(msg);
-	}
-
-	private void excuteDuilian(IDuilian duilian){
-		int dlTurn = 7;
-		mShellBase.sendKeyEventCode("job");
-		duilian.go();
-		while(dlTurn-- > 0 ){
-			duilian.duilian();
-		}
-		duilian.back();
-	}
-
-	private void startYigong(){
-		TimeCount.getInstance().setHackCount(Integer.MAX_VALUE);
-		final int duration = 25;
-		new Thread(new Runnable() {
-			@Override
-			public void run() {
-				mShellBase.sendKeyEventCode("remove all");
-				mShellBase.sendKeyEventCode("wear all");
-				mShellBase.sendKeyEventCode("chen dl");
-				mShellBase.sendKeyEventCode("n");
-				mShellBase.sendKeyEventCode("n");
-				mShellBase.sendKeyEventCode("e");
-				mShellBase.sendKeyEventCode("n");
-				mShellBase.sendKeyEventCode("enter");
-				mShellBase.sendKeyEventCode("s");
-				mShellBase.sendKeyEventCode("enter");
-				mShellBase.sendKeyEventCode("ne");
-				mShellBase.sendKeyEventCode("get huachu");
-				mShellBase.sendKeyEventCode("wield huachu");
-				int xiuxiDuration = duration;
-				while(TimeCount.getInstance().subtractCount() > 0){
-					setFloatText();
-					mShellBase.sendKeyEventCode(1000, "ask huajiang about job");
-					int dur = 6;
-					while(dur-- > 0) {
-						if(xiuxiDuration-- < 0){
-							xiuxiDuration = duration;
-							mShellBase.sendKeyEventCode("xiuxi beg", 3000);
-						}
-						mShellBase.sendKeyEventCode("work", 1000);
-					}
-				}
-			}
-		}
-		).start();
+	private void setWackLock(){
+		mWakeLock = ((PowerManager) getApplicationContext().getSystemService(Context.POWER_SERVICE))
+				.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK, getClass().getName());
+		mWakeLock.acquire();
 	}
 
 	//Environment.getExternalStorageDirectory()
@@ -416,6 +254,7 @@ public class FxService extends Service {
 	}
 
 	private void onShow() {
+        this.mEndSelf = true;
 		Intent intent = new Intent(FxService.this, FuncService.class);
 		intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 		intent.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
@@ -426,7 +265,6 @@ public class FxService extends Service {
 		intent.putExtra("timecount", TimeCount.getInstance().getHackCount());
 		TimeCount.getInstance().setHackCount(0);
 		startService(intent);
-		this.mEndSelf = true;
 		stopSelf();
 	}
 
@@ -451,7 +289,6 @@ public class FxService extends Service {
 		if(mWakeLock != null){
 			mWakeLock.release();
 		}
-		mAutoclickHandler.removeCallbacksAndMessages(null);
 
 		if(!mEndSelf){
 			ActionReceiver.setFloatButton(this);
@@ -467,81 +304,6 @@ public class FxService extends Service {
 		return result;
 	}
 
-	/// 以下 内部class
-
-	interface IDuilian{
-		void go();
-		void duilian();
-		void back();
-	}
-
-	class DuilianZhu extends ShellBase implements IDuilian {
-
-		@Override
-		public void go() {
-		}
-
-		@Override
-		public void duilian() {
-			sendKeyEventCode("duilian zhu wanli", 1500);
-		}
-
-		@Override
-		public void back() {
-		}
-	};
-
-	class DuilianWei extends ShellBase implements IDuilian {
-
-		@Override
-		public void go() {
-		}
-
-		@Override
-		public void duilian() {
-			sendKeyEventCode("duilian wei shi", 1500);
-		}
-
-		@Override
-		public void back() {
-		}
-	};
-
-	class DuilianJia extends ShellBase implements IDuilian {
-
-		@Override
-		public void go() {
-			sendKeyEventCode("enter");
-		}
-
-		@Override
-		public void duilian() {
-			sendKeyEventCode("duilian jia ding", 1500);
-		}
-
-		@Override
-		public void back() {
-			sendKeyEventCode("out");
-		}
-	};
-
-	class DuilianFu extends ShellBase implements IDuilian {
-
-		@Override
-		public void go() {
-			sendKeyEventCode("s");
-		}
-
-		@Override
-		public void duilian() {
-			sendKeyEventCode("duilian fu sigui", 1500);
-		}
-
-		@Override
-		public void back() {
-			sendKeyEventCode( "n");
-		}
-	};
 
 }
 

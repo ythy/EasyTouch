@@ -17,6 +17,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.support.annotation.Nullable;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -40,6 +41,7 @@ import com.mx.easytouch.utils.CommonUtils;
 import com.mx.easytouch.utils.DBHelper;
 import com.mx.easytouch.vo.InstallPackage;
 
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
@@ -65,14 +67,18 @@ public class FuncService extends Service {
     @BindView(R.id.tvAutoClick)
     TextView tvClick;
 
+    @BindView(R.id.llinclude)
+    LinearLayout llInclude;
+
     @OnClick(R.id.tvAutoClick)
     void onAutoClicSetkBtnClickHandler(View v){
-        DialogAutoClick.show(FuncService.this, mainHandler, mAutoClickDuration, mAutoClickTime);
+        llInclude.setVisibility(View.VISIBLE);
+        DialogAutoClick.show(mFloatLayout, mainHandler, mAutoClickDuration, mAutoClickTime);
     }
 
     @OnClick(R.id.ll_parent)
     void onllParentClickHandler(View v){
-        onBack();
+        onBackToFxService(null);
     }
 
     @OnTouch(R.id.ll_main)
@@ -87,21 +93,38 @@ public class FuncService extends Service {
         mHomeIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
                 | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
         startActivity(mHomeIntent);
-        onBack();
+        onBackToFxService(null);
     }
     @OnClick(R.id.btn_click)
     void onAutoClickBtnClickHandler(View v){
-        onBackAutoClick();
+        Bundle bundle = new Bundle();
+        bundle.putBoolean("autoclick", true);
+        bundle.putInt("frequency", mAutoClickDuration);
+        bundle.putIntArray("timer", mAutoClickTime);
+        onBackToFxService(bundle);
     }
 
     @OnClick(R.id.btnHack)
     void onHackClickBtnClickHandler(View v){
-        onBackHackClick();
+        Bundle bundle = new Bundle();
+        bundle.putString("hyAuto", spinnerName.getSelectedItem().toString());
+        onBackToFxService(bundle);
     }
 
     @OnClick(R.id.btnScreenshot)
     void onScreenShotClickBtnClickHandler(View v){
-        onBackScreenShotClick();
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP){
+            Intent intent = new Intent(FuncService.this, MediaActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            intent.putExtra("position_x", mPx);
+            intent.putExtra("position_y", mPy);
+            startActivity(intent);
+            stopSelf();
+        }else{
+            Bundle bundle = new Bundle();
+            bundle.putBoolean("screenshot", true);
+            onBackToFxService(bundle);
+        }
     }
 
     @BindView(R.id.spinnerName)
@@ -146,7 +169,7 @@ public class FuncService extends Service {
     private int mPx;
     private int mPy;
 
-    private int mAutoClickDuration = 10;
+    private int mAutoClickDuration = 5;
     private int[] mAutoClickTime = new int[]{7,18,00};
 
 
@@ -163,7 +186,7 @@ public class FuncService extends Service {
         mDBHelper = new DBHelper(this, Providerdata.DATABASE_NAME,
                 null, Providerdata.DATABASE_VERSION);
         if(intent.getIntExtra("timecount", 0) > 0)
-            onBack();
+            onBackToFxService(null);
         else{
             setWindow();
             setLayout();
@@ -184,7 +207,7 @@ public class FuncService extends Service {
         // 设置图片格式，效果为背景透明
         wmParams.format = PixelFormat.RGBA_8888;
         // 设置浮动窗口不可聚焦（实现操作除浮动窗口外的其他可见窗口的操作）
-        wmParams.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
+        //wmParams.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
         // 调整悬浮窗显示的停靠位置为左侧置顶
         wmParams.gravity = Gravity.LEFT | Gravity.TOP;
         // 以屏幕左上角为原点，设置x、y初始值，相对于gravity
@@ -363,46 +386,6 @@ public class FuncService extends Service {
         }
     }
 
-
-
-    public void onBackAutoClick() {
-        Intent intent = new Intent(FuncService.this, FxService.class);
-        intent.putExtra("position_x", mPx);
-        intent.putExtra("position_y", mPy);
-        intent.putExtra("autoclick", true);
-        intent.putExtra("frequency", mAutoClickDuration);
-        intent.putExtra("timer", mAutoClickTime);
-        startService(intent);
-        this.stopSelf();
-    }
-
-    public void onBackHackClick() {
-
-        Intent intent = new Intent(FuncService.this, FxService.class);
-        intent.putExtra("position_x", mPx);
-        intent.putExtra("position_y", mPy);
-        intent.putExtra("hyAuto", spinnerName.getSelectedItem().toString());
-        startService(intent);
-        this.stopSelf();
-    }
-
-    public void onBackScreenShotClick() {
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP){
-            Intent intent = new Intent(FuncService.this, MediaActivity.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            intent.putExtra("position_x", mPx);
-            intent.putExtra("position_y", mPy);
-            startActivity(intent);
-        }else{
-            Intent intent = new Intent(FuncService.this, FxService.class);
-            intent.putExtra("position_x", mPx);
-            intent.putExtra("position_y", mPy);
-            intent.putExtra("screenshot", true);
-            startService(intent);
-        }
-        this.stopSelf();
-    }
-
     Handler mainHandler = new Handler(){
         @Override
         public void handleMessage(Message msg) {
@@ -420,6 +403,7 @@ public class FuncService extends Service {
                 mAutoClickDuration = data.getInt("duration");
                 mAutoClickTime = data.getIntArray("timer");
                 tvClick.setText(mAutoClickDuration + " " + ( mAutoClickTime == null ? "" : mAutoClickTime[0] + ":"  + mAutoClickTime[1] ) );
+                llInclude.setVisibility(View.GONE);
             }
         }
     };
@@ -443,7 +427,7 @@ public class FuncService extends Service {
                 @Override
                 public void onClick(View v) {
                     startActivity(ivIntent);
-                    onBack();
+                    onBackToFxService(null);
                 }
             });
         }
@@ -459,17 +443,18 @@ public class FuncService extends Service {
         }
     }
 
-    public void onBack() {
+
+    public void onBackToFxService(Bundle bundle) {
         Intent intent = new Intent(FuncService.this, FxService.class);
-        intent.putExtra("position_x", mPx);
-        intent.putExtra("position_y", mPy);
+        Bundle extras = bundle == null ? new Bundle() : (Bundle) bundle.clone();
+        extras.putInt("position_x", mPx);
+        extras.putInt("position_y", mPy);
+        intent.putExtras(extras);
         startService(intent);
-        this.stopSelf();
-        if (mFloatLayout != null) {
-            // 移除悬浮窗口
-            mWindowManager.removeView(mFloatLayout);
-        }
+        stopSelf();
     }
+
+
 
     @Override
     public void onDestroy() {
