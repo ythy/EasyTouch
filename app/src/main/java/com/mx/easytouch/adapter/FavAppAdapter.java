@@ -21,7 +21,7 @@ public class FavAppAdapter extends BaseAdapter {
 	private LayoutInflater layoutInflator;
 	private List<InstallPackage> list;
 	private FavAppTouchListener mListener;
-	
+
 	public FavAppAdapter() {
 	}
 
@@ -30,7 +30,7 @@ public class FavAppAdapter extends BaseAdapter {
 		layoutInflator = LayoutInflater.from(mcontext);
 		list = items;
 	}
-	
+
 	public void setFavAppTouchListener( FavAppTouchListener listener) {
 		mListener = listener;
 	}
@@ -53,7 +53,7 @@ public class FavAppAdapter extends BaseAdapter {
 	@Override
 	public View getView(int arg0, View convertView, ViewGroup arg2) {
 		Component component = null;
-		
+
 		if (convertView == null) {
 			convertView = layoutInflator.inflate(
 					R.layout.adapter_favapp, null);
@@ -65,8 +65,8 @@ public class FavAppAdapter extends BaseAdapter {
 			convertView.setTag(component);
 		}
 		else
-			component = (Component) convertView.getTag();  
-		
+			component = (Component) convertView.getTag();
+
 		final Component currentComponent = component;
 		final int position = arg0;
 		try {
@@ -81,7 +81,7 @@ public class FavAppAdapter extends BaseAdapter {
 					mListener.onDelBtnClickListener(fav);
 				}
 			});
-			
+
 			component.tvName.setOnTouchListener(new View.OnTouchListener() {
 
 				@Override
@@ -92,11 +92,11 @@ public class FavAppAdapter extends BaseAdapter {
 	                return false;
 				}
 	        });
-			
+
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		
+
 		return convertView;
 	}
 
@@ -105,7 +105,7 @@ public class FavAppAdapter extends BaseAdapter {
 	public interface FavAppTouchListener {
 		public void onDelBtnClickListener(InstallPackage info);
 	}
-	
+
 	private static class Component{
 		 public TextView tvName;
 		 public Button btnDel;

@@ -119,6 +119,7 @@ public class FuncService extends Service {
             intent.putExtra("position_x", mPx);
             intent.putExtra("position_y", mPy);
             startActivity(intent);
+            clean();
             stopSelf();
         }else{
             Bundle bundle = new Bundle();
@@ -230,7 +231,7 @@ public class FuncService extends Service {
             @Override
             public void run() {
                 setTaskBoxLayout();
-                if(CommonUtils.getSPType(getApplicationContext(), com.mx.easytouch.utils.Settings.SP_RECENT_APP)){
+                if(CommonUtils.getSPType(getApplicationContext(), com.mx.easytouch.utils.Settings.INSTANCE.getSP_RECENT_APP())){
                     if(Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP)
                         getTaskList();
                     else
@@ -241,32 +242,32 @@ public class FuncService extends Service {
                             }
                         }).start();
                 }
-                if(CommonUtils.getSPType(getApplicationContext(), com.mx.easytouch.utils.Settings.SP_FAVORITE)){
+                if(CommonUtils.getSPType(getApplicationContext(), com.mx.easytouch.utils.Settings.INSTANCE.getSP_FAVORITE())){
                     getFavList();
                 }
             }
         });
 
 
-        if(CommonUtils.getSPType(this, com.mx.easytouch.utils.Settings.SP_AUTO_CLICK)){
+        if(CommonUtils.getSPType(this, com.mx.easytouch.utils.Settings.INSTANCE.getSP_AUTO_CLICK())){
             llAutoclick.setVisibility(View.VISIBLE);
             tvClick.setText(mAutoClickDuration + " " + ( mAutoClickTime == null ? "" : mAutoClickTime[0] + ":"  + mAutoClickTime[1] ) );
         }
         else
             llAutoclick.setVisibility(View.GONE);
 
-        if(CommonUtils.getSPType(this, com.mx.easytouch.utils.Settings.SP_HY_AUTO)) {
+        if(CommonUtils.getSPType(this, com.mx.easytouch.utils.Settings.INSTANCE.getSP_HY_AUTO())) {
             llhy.setVisibility(View.VISIBLE);
             spinnerName.setSelection(0);
         }else
             llhy.setVisibility(View.GONE);
 
-        if(CommonUtils.getSPType(this, com.mx.easytouch.utils.Settings.SP_SCREENSHOT))
+        if(CommonUtils.getSPType(this, com.mx.easytouch.utils.Settings.INSTANCE.getSP_SCREENSHOT()))
             llscreenshot.setVisibility(View.VISIBLE);
         else
             llscreenshot.setVisibility(View.GONE);
 
-        if(CommonUtils.getSPType(this, com.mx.easytouch.utils.Settings.SP_VOLUMN)){
+        if(CommonUtils.getSPType(this, com.mx.easytouch.utils.Settings.INSTANCE.getSP_VOLUMN())){
             llVolumn.setVisibility(View.VISIBLE);
             setVolumn(seekBarVolumnMusic, AudioManager.STREAM_MUSIC);
             setVolumn(seekBarVolumnRing, AudioManager.STREAM_RING);
@@ -305,7 +306,7 @@ public class FuncService extends Service {
         final int minWidth = CommonUtils.dip2px(this, 240);
         RelativeLayout.LayoutParams lps = new RelativeLayout.LayoutParams( Math.max(minWidth,llmain.getMeasuredWidth())
                 , RelativeLayout.LayoutParams.WRAP_CONTENT);
-        if (CommonUtils.getSPType(getApplicationContext(), com.mx.easytouch.utils.Settings.SP_RECENT_APP)){
+        if (CommonUtils.getSPType(getApplicationContext(), com.mx.easytouch.utils.Settings.INSTANCE.getSP_RECENT_APP())){
             lps.addRule(RelativeLayout.BELOW, R.id.ll_main);
             lps.addRule(RelativeLayout.CENTER_HORIZONTAL, RelativeLayout.TRUE);
             this.hsTask.setLayoutParams(lps);
@@ -318,7 +319,7 @@ public class FuncService extends Service {
         final int minWidth = CommonUtils.dip2px(this, 240);
         RelativeLayout.LayoutParams lps = new RelativeLayout.LayoutParams( Math.max(minWidth,llmain.getMeasuredWidth())
                 , RelativeLayout.LayoutParams.WRAP_CONTENT);
-        if (CommonUtils.getSPType(getApplicationContext(), com.mx.easytouch.utils.Settings.SP_FAVORITE)){
+        if (CommonUtils.getSPType(getApplicationContext(), com.mx.easytouch.utils.Settings.INSTANCE.getSP_FAVORITE())){
             lps.addRule(RelativeLayout.BELOW, flag ? R.id.hsViewTask : R.id.ll_main);
             lps.addRule(RelativeLayout.CENTER_HORIZONTAL, RelativeLayout.TRUE);
             this.hsFav.setLayoutParams(lps);
@@ -451,18 +452,21 @@ public class FuncService extends Service {
         extras.putInt("position_y", mPy);
         intent.putExtras(extras);
         startService(intent);
+        clean();
         stopSelf();
     }
 
-
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
+    private void clean(){
         mDBHelper.close();
         if (mFloatLayout != null) {
             // 移除悬浮窗口
             mWindowManager.removeView(mFloatLayout);
         }
+    }
+
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
     }
 }

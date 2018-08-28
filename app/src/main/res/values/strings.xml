@@ -10,7 +10,7 @@
     <string name="appSet">APP_SETTINGS</string>
     <string name="float_moveDistance">拖拽启动距离</string>
     <string name="type_autoclick">连点</string>
-    <string name="type_hy">海洋挂机</string>
+    <string name="type_hy">江山</string>
     <string name="type_screenshot">截屏</string>
     <string name="type_recent">最近打开的程序</string>
     <string name="type_notification">通知栏显示</string>
