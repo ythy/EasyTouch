@@ -31,6 +31,8 @@ import com.mx.easytouch.utils.Settings
 import com.mx.easytouch.utils.ShellBase
 import com.mx.easytouch.utils.TimeCount
 import com.mx.easytouch.R
+import com.mx.easytouch.components.FXAutoClick
+import com.mx.easytouch.components.FXJiangShan
 
 import java.util.Date
 
@@ -66,7 +68,29 @@ class FxService : Service() {
                 val positionX = bundle.getInt("position_x", 0)
                 val positionY = bundle.getInt("position_y", 0)
 
-               if (bundle.getBoolean("screenshot", false)) {
+                if (bundle.getBoolean("autoclick", false)) {
+                    createFloatView(0, 0)
+                    setWackLock()
+                    FXAutoClick(positionX + mBtnFloat.measuredWidth.div(2),
+                            positionY + mBtnFloat.measuredHeight.div(2) + statusBarHeight,
+                            bundle.getInt("frequency", 10), bundle.getIntArray("timer"), object : FXAutoClick.AutoClickHandle {
+                        override fun floatText(input: String) {
+                            mTvFloat.text = input
+                        }
+
+                        override fun end() {
+                            onShow()
+                        }
+                    })
+                } else if (bundle.getString("hyAuto") != null) {
+                    createFloatView(positionX, positionY)
+                    setWackLock()
+                    FXJiangShan(object : FXJiangShan.JSHandle{
+                        override fun floatText(input: String) {
+                            mTvFloat.text = input
+                        }
+                    })
+                } else if (bundle.getBoolean("screenshot", false)) {
                     this.startScreenShot(positionX, positionY)
                 } else
                     createFloatView(positionX, positionY)
