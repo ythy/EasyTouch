@@ -40,8 +40,10 @@ public class ActionReceiver extends BroadcastReceiver {
 
 	private void startFloatService(Context context){
 		Intent fxIntent = new Intent(context, FxService.class);
+		context.stopService(new Intent(context, FuncService.class));
 		if(!CommonUtils.isMyServiceRunning(context, FuncService.class) && !CommonUtils.isMyServiceRunning(context, FxService.class))
 			context.startService(fxIntent);
+
 	}
 
 }

@@ -25,7 +25,7 @@ public class FileUtil {
   public static String getScreenShots(Context context) {
     StringBuffer stringBuffer = new StringBuffer(getAppPath(context));
     stringBuffer.append(File.separator);
-    stringBuffer.append(Settings.SRC_PATH);
+    stringBuffer.append(Settings.INSTANCE.getSRC_PATH());
     File file = new File(stringBuffer.toString());
     if (!file.exists()) {
       file.mkdirs();

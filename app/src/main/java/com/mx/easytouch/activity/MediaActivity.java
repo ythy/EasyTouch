@@ -34,6 +34,7 @@ import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Display;
 import android.view.OrientationEventListener;
+import android.view.WindowManager;
 import android.widget.ArrayAdapter;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -85,6 +86,8 @@ public class MediaActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                WindowManager.LayoutParams.FLAG_FULLSCREEN);
         startProjection();
     }
 

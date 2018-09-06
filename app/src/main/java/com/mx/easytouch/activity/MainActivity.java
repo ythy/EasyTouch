@@ -149,13 +149,13 @@ public class MainActivity extends Activity {
     }
 
     private void initAllCheckBox(){
-        initCheckBox(mCheckAuto, Settings.SP_AUTO_CLICK);
-        initCheckBox(mCheckHY, Settings.SP_HY_AUTO);
-        initCheckBox(mCheckShot, Settings.SP_SCREENSHOT);
-        initCheckBox(mCheckRecent, Settings.SP_RECENT_APP);
-        initCheckBox(mCheckNotification, Settings.SP_NOTIFICATION);
-        initCheckBox(mCheckFavorite, Settings.SP_FAVORITE);
-        initCheckBox(mCheckVolumn, Settings.SP_VOLUMN);
+        initCheckBox(mCheckAuto, Settings.INSTANCE.getSP_AUTO_CLICK());
+        initCheckBox(mCheckHY, Settings.INSTANCE.getSP_HY_AUTO());
+        initCheckBox(mCheckShot, Settings.INSTANCE.getSP_SCREENSHOT());
+        initCheckBox(mCheckRecent, Settings.INSTANCE.getSP_RECENT_APP());
+        initCheckBox(mCheckNotification, Settings.INSTANCE.getSP_NOTIFICATION());
+        initCheckBox(mCheckFavorite, Settings.INSTANCE.getSP_FAVORITE());
+        initCheckBox(mCheckVolumn, Settings.INSTANCE.getSP_VOLUMN());
     }
 
     private void initCheckBox(CheckBox chk, String set){
