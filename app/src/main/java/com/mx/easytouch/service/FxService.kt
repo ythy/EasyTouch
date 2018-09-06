@@ -25,8 +25,6 @@ import android.widget.FrameLayout
 import android.widget.TextView
 import android.widget.Toast
 
-import com.mx.easytouch.components.FXAutoClick
-import com.mx.easytouch.components.FXJiangShan
 import com.mx.easytouch.receiver.ActionReceiver
 import com.mx.easytouch.utils.CommonUtils
 import com.mx.easytouch.utils.Settings
@@ -68,25 +66,7 @@ class FxService : Service() {
                 val positionX = bundle.getInt("position_x", 0)
                 val positionY = bundle.getInt("position_y", 0)
 
-                if (bundle.getBoolean("autoclick", false)) {
-                    createFloatView(0, 0)
-                    setWackLock()
-                    FXAutoClick(positionX + mBtnFloat.measuredWidth.div(2),
-                            positionY + mBtnFloat.measuredHeight.div(2) + statusBarHeight,
-                            bundle.getInt("frequency", 10), bundle.getIntArray("timer"), object : FXAutoClick.AutoClickHandle {
-                        override fun floatText(input: String) {
-                            mTvFloat.text = input
-                        }
-
-                        override fun end() {
-                            onShow()
-                        }
-                    })
-                } else if (bundle.getString("hyAuto") != null) {
-                    createFloatView(positionX, positionY)
-                    setWackLock()
-                    FXJiangShan(FXJiangShan.JSHandle { input -> mTvFloat.text = input })
-                } else if (bundle.getBoolean("screenshot", false)) {
+               if (bundle.getBoolean("screenshot", false)) {
                     this.startScreenShot(positionX, positionY)
                 } else
                     createFloatView(positionX, positionY)
