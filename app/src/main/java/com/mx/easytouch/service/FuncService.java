@@ -37,6 +37,7 @@ import com.mx.easytouch.R;
 import com.mx.easytouch.activity.MediaActivity;
 import com.mx.easytouch.db.Providerdata;
 import com.mx.easytouch.dialog.DialogAutoClick;
+import com.mx.easytouch.receiver.ActionReceiver;
 import com.mx.easytouch.utils.CommonUtils;
 import com.mx.easytouch.utils.DBHelper;
 import com.mx.easytouch.vo.InstallPackage;
@@ -88,13 +89,21 @@ public class FuncService extends Service {
 
     @OnClick(R.id.btnHome)
     void onHomeBtnClickHandler(View v){
-        Intent mHomeIntent = new Intent(Intent.ACTION_MAIN);
-        mHomeIntent.addCategory(Intent.CATEGORY_HOME);
-        mHomeIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
-                | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
-        startActivity(mHomeIntent);
-        onBackToFxService(null);
+        clean();
+        stopSelf();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                Intent mHomeIntent = new Intent(Intent.ACTION_MAIN);
+                mHomeIntent.addCategory(Intent.CATEGORY_HOME);
+                mHomeIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                        | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
+                startActivity(mHomeIntent);
+                ActionReceiver.setFloatButton(getApplicationContext(), mPx, mPy);
+            }
+        }).start();
     }
+
     @OnClick(R.id.btn_click)
     void onAutoClickBtnClickHandler(View v){
         Bundle bundle = new Bundle();
@@ -446,14 +455,14 @@ public class FuncService extends Service {
 
 
     public void onBackToFxService(Bundle bundle) {
+        clean();
+        stopSelf();
         Intent intent = new Intent(FuncService.this, FxService.class);
         Bundle extras = bundle == null ? new Bundle() : (Bundle) bundle.clone();
         extras.putInt("position_x", mPx);
         extras.putInt("position_y", mPy);
         intent.putExtras(extras);
         startService(intent);
-        clean();
-        stopSelf();
     }
 
     private void clean(){

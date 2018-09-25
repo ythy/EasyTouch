@@ -5,6 +5,7 @@ import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Bundle;
 import android.os.SystemClock;
 import android.util.Log;
 import android.widget.Toast;
@@ -24,8 +25,22 @@ public class ActionReceiver extends BroadcastReceiver {
 		Log.e(TAG, "onReceive " + (intent.getAction() == null ? "none" : intent.getAction() ) );
 	 	if(intent.getAction().equals(Intent.ACTION_USER_PRESENT) || intent.getAction().equals(Intent.ACTION_BOOT_COMPLETED) ||
 				intent.getAction().equals(ACTION_ALARM)) {
-			this.startFloatService(context);
+			int x = intent.getIntExtra("x", 0);
+			int y = intent.getIntExtra("y", 0);
+			this.startFloatService(context, x, y);
 		}
+	}
+
+	public static void setFloatButton(Context context, int x, int y)
+	{
+		Intent intent = new Intent(context, ActionReceiver.class);
+		intent.setAction(ACTION_ALARM);
+		intent.putExtra("x", x);
+		intent.putExtra("y", y);
+		context.sendBroadcast(intent);
+//		AlarmManager am =( AlarmManager)context.getSystemService(Context.ALARM_SERVICE);
+//		PendingIntent pi = PendingIntent.getBroadcast(context, 0, intent, 0);
+//		am.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(), 1000 * 50, pi);
 	}
 
 	public static void setFloatButton(Context context)
@@ -38,8 +53,12 @@ public class ActionReceiver extends BroadcastReceiver {
 //		am.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(), 1000 * 50, pi);
 	}
 
-	private void startFloatService(Context context){
+	private void startFloatService(Context context, int x, int y){
 		Intent fxIntent = new Intent(context, FxService.class);
+		Bundle extras = new Bundle();
+		extras.putInt("position_x", x);
+		extras.putInt("position_y", y);
+		fxIntent.putExtras(extras);
 		context.stopService(new Intent(context, FuncService.class));
 		if(!CommonUtils.isMyServiceRunning(context, FuncService.class) && !CommonUtils.isMyServiceRunning(context, FxService.class))
 			context.startService(fxIntent);
