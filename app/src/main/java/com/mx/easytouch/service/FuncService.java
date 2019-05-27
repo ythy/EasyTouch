@@ -65,6 +65,8 @@ public class FuncService extends Service {
     // 创建浮动窗口设置布局参数的对象
     WindowManager mWindowManager;
 
+    private boolean mIsHomeBack = false;
+
     @BindView(R.id.tvAutoClick)
     TextView tvClick;
 
@@ -89,19 +91,9 @@ public class FuncService extends Service {
 
     @OnClick(R.id.btnHome)
     void onHomeBtnClickHandler(View v){
+        mIsHomeBack = true;
         clean();
         stopSelf();
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                Intent mHomeIntent = new Intent(Intent.ACTION_MAIN);
-                mHomeIntent.addCategory(Intent.CATEGORY_HOME);
-                mHomeIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
-                        | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
-                startActivity(mHomeIntent);
-                ActionReceiver.setFloatButton(getApplicationContext(), mPx, mPy);
-            }
-        }).start();
     }
 
     @OnClick(R.id.btn_click)
@@ -124,7 +116,7 @@ public class FuncService extends Service {
     void onScreenShotClickBtnClickHandler(View v){
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP){
             Intent intent = new Intent(FuncService.this, MediaActivity.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             intent.putExtra("position_x", mPx);
             intent.putExtra("position_y", mPy);
             startActivity(intent);
@@ -193,6 +185,7 @@ public class FuncService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         mPx = intent.getIntExtra("position_x", 0);
         mPy = intent.getIntExtra("position_y", 0);
+        mIsHomeBack = false;
         mDBHelper = new DBHelper(this, Providerdata.DATABASE_NAME,
                 null, Providerdata.DATABASE_VERSION);
         if(intent.getIntExtra("timecount", 0) > 0)
@@ -477,5 +470,18 @@ public class FuncService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        if(mIsHomeBack){
+            Intent mHomeIntent = new Intent(Intent.ACTION_MAIN);
+            mHomeIntent.addCategory(Intent.CATEGORY_HOME);
+            mHomeIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                    | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
+            startActivity(mHomeIntent);
+            Intent intent = new Intent(ActionReceiver.ACTION_ALARM);
+            intent.putExtra("x", mPx);
+            intent.putExtra("y", mPy);
+            sendBroadcast(intent);
+            mIsHomeBack = false;
+        }
+
     }
 }

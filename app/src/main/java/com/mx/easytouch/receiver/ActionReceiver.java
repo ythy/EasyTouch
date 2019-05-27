@@ -31,18 +31,6 @@ public class ActionReceiver extends BroadcastReceiver {
 		}
 	}
 
-	public static void setFloatButton(Context context, int x, int y)
-	{
-		Intent intent = new Intent(context, ActionReceiver.class);
-		intent.setAction(ACTION_ALARM);
-		intent.putExtra("x", x);
-		intent.putExtra("y", y);
-		context.sendBroadcast(intent);
-//		AlarmManager am =( AlarmManager)context.getSystemService(Context.ALARM_SERVICE);
-//		PendingIntent pi = PendingIntent.getBroadcast(context, 0, intent, 0);
-//		am.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(), 1000 * 50, pi);
-	}
-
 	public static void setFloatButton(Context context)
 	{
 		Intent intent = new Intent(context, ActionReceiver.class);
@@ -59,7 +47,7 @@ public class ActionReceiver extends BroadcastReceiver {
 		extras.putInt("position_x", x);
 		extras.putInt("position_y", y);
 		fxIntent.putExtras(extras);
-		context.stopService(new Intent(context, FuncService.class));
+		context.stopService(new Intent(context, FuncService.class)); //防止两个service同时存在，先关闭再开启
 		if(!CommonUtils.isMyServiceRunning(context, FuncService.class) && !CommonUtils.isMyServiceRunning(context, FxService.class))
 			context.startService(fxIntent);
 
