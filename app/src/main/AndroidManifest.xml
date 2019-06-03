@@ -1,30 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    package="com.mx.easytouch"
     android:versionCode="7"
-    android:versionName="2.3.5"
-    package="com.mx.easytouch">
+    android:versionName="2.3.5">
 
     <!-- 对外部存储设备的写入权限 -->
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"></uses-permission>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <!-- 对外部文件的写入和删除权限 -->
-    <uses-permission android:name="android.permission.MOUNT_UNMOUNT_FILESYSTEMS"></uses-permission>
+    <uses-permission android:name="android.permission.MOUNT_UNMOUNT_FILESYSTEMS" />
     <!-- 悬浮窗口 -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.INTERACT_ACROSS_USERS_FULL" />
-    <uses-permission android:name="android.permission.GET_TASKS"  />
-    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"
+    <uses-permission android:name="android.permission.GET_TASKS" />
+    <uses-permission
+        android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
 
     <!-- 打开Camera的权限 -->
     <uses-permission android:name="android.permission.CAMERA" />
+
     <uses-feature android:name="android.hardware.camera" />
     <uses-feature android:name="android.hardware.autofocus" />
 
     <!-- 开启闪光灯权限 -->
     <uses-permission android:name="android.permission.FLASHLIGHT" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"></uses-permission>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
         android:allowBackup="true"
@@ -32,76 +34,74 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-
         <meta-data
             android:name="com.samsung.android.health.permission.read"
             android:value="com.samsung.health.step_count" />
 
-        <activity android:name=".activity.MainActivity"
-            android:screenOrientation="portrait" >
+        <activity
+            android:name=".activity.MainActivity"
+            android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <activity android:name=".activity.MediaActivity"
-            android:theme="@android:style/Theme.Translucent">
-        </activity>
-
-        <service  android:process=":remote"
-            android:name="com.mx.easytouch.service.FxService"
-            android:enabled="true">
-        </service>
+        <activity
+            android:name=".activity.MediaActivity"
+            android:excludeFromRecents="true"
+            android:theme="@android:style/Theme.Translucent"></activity>
 
         <service
-            android:name="com.mx.easytouch.service.FuncService"
-            android:enabled="true">
-        </service>
-
+            android:name=".service.FxService"
+            android:enabled="true"
+            android:process=":remote"></service>
         <service
-            android:name="com.mx.easytouch.service.ScreenshotService"
-            android:enabled="true">
-        </service>
+            android:name=".service.FuncService"
+            android:enabled="true"></service>
+        <service
+            android:name=".service.ScreenshotService"
+            android:enabled="true"></service>
 
-        <receiver android:process=":remote"  android:name="com.mx.easytouch.receiver.ActionReceiver">
+        <receiver
+            android:name=".receiver.ActionReceiver"
+            android:process=":remote">
             <intent-filter android:priority="90000">
                 <action android:name="android.intent.action.USER_PRESENT" />
             </intent-filter>
             <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED"></action>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
             <intent-filter>
                 <action android:name="com.mx.easytouch.alarm" />
             </intent-filter>
         </receiver>
-
         <receiver
-            android:name="com.mx.easytouch.receiver.TorchWidgetProvider"
+            android:name=".receiver.TorchWidgetProvider"
             android:icon="@drawable/flash_on"
-            android:label="@string/type_torch" >
+            android:label="@string/type_torch">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
             <intent-filter>
-                <action android:name="COM_FLASHLIGHT" >
-                </action>
+                <action android:name="COM_FLASHLIGHT"></action>
             </intent-filter>
+
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/torch_appwidget_info" />
         </receiver>
 
         <service
-            android:name="com.mx.easytouch.service.TorchService"
-            android:enabled="true">
-        </service>
-        <service android:name=".service.FavorAppService" >
+            android:name=".service.TorchService"
+            android:enabled="true"></service>
+        <service android:name=".service.FavorAppService">
             <intent-filter>
                 <action android:name="com.mx.easytouch.service.FavorAppService" />
             </intent-filter>
         </service>
 
+        <activity android:name=".activity.InstalledActivity"></activity>
     </application>
 
 </manifest>
