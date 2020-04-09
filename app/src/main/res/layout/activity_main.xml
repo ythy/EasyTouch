@@ -28,6 +28,11 @@
                     android:layout_height="wrap_content"
                     android:id="@+id/btnSetApp"
                     android:text="@string/appSet"/>
+                <Button
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/btnFloat"
+                    android:text="Float"/>
                 <TextView
                     android:layout_marginLeft="10dp"
                     android:layout_width="wrap_content"
@@ -44,12 +49,6 @@
                     android:layout_height="wrap_content"
                     android:id="@+id/chkAuto"
                     android:text="@string/type_autoclick"/>
-                <CheckBox
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginLeft="5dp"
-                    android:id="@+id/chkHY"
-                    android:text="@string/type_hy"/>
                 <CheckBox
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"

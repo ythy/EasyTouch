@@ -17,7 +17,6 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.support.annotation.Nullable;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -32,22 +31,19 @@ import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.TextView;
-
 import com.mx.easytouch.R;
 import com.mx.easytouch.activity.MediaActivity;
 import com.mx.easytouch.db.Providerdata;
 import com.mx.easytouch.dialog.DialogAutoClick;
-import com.mx.easytouch.receiver.ActionReceiver;
 import com.mx.easytouch.utils.CommonUtils;
 import com.mx.easytouch.utils.DBHelper;
+import com.mx.easytouch.utils.ServiceUtil;
 import com.mx.easytouch.vo.InstallPackage;
-
-import java.util.ArrayList;
+import java.lang.ref.WeakReference;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
@@ -64,8 +60,6 @@ public class FuncService extends Service {
     WindowManager.LayoutParams wmParams;
     // 创建浮动窗口设置布局参数的对象
     WindowManager mWindowManager;
-
-    private boolean mIsHomeBack = false;
 
     @BindView(R.id.tvAutoClick)
     TextView tvClick;
@@ -91,9 +85,14 @@ public class FuncService extends Service {
 
     @OnClick(R.id.btnHome)
     void onHomeBtnClickHandler(View v){
-        mIsHomeBack = true;
         clean();
         stopSelf();
+        Intent mHomeIntent = new Intent(Intent.ACTION_MAIN);
+        mHomeIntent.addCategory(Intent.CATEGORY_HOME);
+        mHomeIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
+        startActivity(mHomeIntent);
+        ServiceUtil.Companion.startFxService(getApplicationContext(), mPx, mPy);
     }
 
     @OnClick(R.id.btn_click)
@@ -185,7 +184,6 @@ public class FuncService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         mPx = intent.getIntExtra("position_x", 0);
         mPy = intent.getIntExtra("position_y", 0);
-        mIsHomeBack = false;
         mDBHelper = new DBHelper(this, Providerdata.DATABASE_NAME,
                 null, Providerdata.DATABASE_VERSION);
         if(intent.getIntExtra("timecount", 0) > 0)
@@ -203,14 +201,16 @@ public class FuncService extends Service {
         mWindowManager = (WindowManager) getApplication().getSystemService(
                 getApplication().WINDOW_SERVICE);
         // 设置window type
-        if(android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT)
+        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+            wmParams.type = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
+        else if(android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT)
             wmParams.type = WindowManager.LayoutParams.TYPE_TOAST;
         else
             wmParams.type = WindowManager.LayoutParams.TYPE_SYSTEM_ALERT;
         // 设置图片格式，效果为背景透明
         wmParams.format = PixelFormat.RGBA_8888;
-        // 设置浮动窗口不可聚焦（实现操作除浮动窗口外的其他可见窗口的操作）
-        //wmParams.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
+        //设置浮动窗口全屏
+        wmParams.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
         // 调整悬浮窗显示的停靠位置为左侧置顶
         wmParams.gravity = Gravity.LEFT | Gravity.TOP;
         // 以屏幕左上角为原点，设置x、y初始值，相对于gravity
@@ -389,27 +389,37 @@ public class FuncService extends Service {
         }
     }
 
-    Handler mainHandler = new Handler(){
+    static class MainHandle extends Handler{
+
+        WeakReference<FuncService> weakReference;
+
+        MainHandle(FuncService service){
+            weakReference = new WeakReference<>(service);
+        }
+
         @Override
         public void handleMessage(Message msg) {
             super.handleMessage(msg);
+            FuncService funcService = weakReference.get();
             if(msg.what == 1){
                 ImageButton imageButton = (ImageButton) msg.obj;
-                llTaskBar.addView(imageButton);
+                funcService.llTaskBar.addView(imageButton);
             }else if(msg.what == 2){
-                llTaskBar.removeAllViews();
+                funcService.llTaskBar.removeAllViews();
             }else if(msg.what == 3){
                 List<InstallPackage> current = (List<InstallPackage>) msg.obj;
-                setFavAppList(current);
+                funcService.setFavAppList(current);
             }else if(msg.what == 4){
                 Bundle data = msg.getData();
-                mAutoClickDuration = data.getInt("duration");
-                mAutoClickTime = data.getIntArray("timer");
-                tvClick.setText(mAutoClickDuration + " " + ( mAutoClickTime == null ? "" : mAutoClickTime[0] + ":"  + mAutoClickTime[1] ) );
-                llInclude.setVisibility(View.GONE);
+                funcService.mAutoClickDuration = data.getInt("duration");
+                funcService.mAutoClickTime = data.getIntArray("timer");
+                funcService.tvClick.setText(funcService.mAutoClickDuration + " " + ( funcService.mAutoClickTime == null ? "" : funcService.mAutoClickTime[0] + ":"  + funcService.mAutoClickTime[1] ) );
+                funcService.llInclude.setVisibility(View.GONE);
             }
         }
-    };
+    }
+
+    Handler mainHandler =  new MainHandle(this);
 
     private ImageButton getAppIcon(String packageName, final Intent ivIntent){
         ImageButton ivIcon;
@@ -450,12 +460,7 @@ public class FuncService extends Service {
     public void onBackToFxService(Bundle bundle) {
         clean();
         stopSelf();
-        Intent intent = new Intent(FuncService.this, FxService.class);
-        Bundle extras = bundle == null ? new Bundle() : (Bundle) bundle.clone();
-        extras.putInt("position_x", mPx);
-        extras.putInt("position_y", mPy);
-        intent.putExtras(extras);
-        startService(intent);
+        ServiceUtil.Companion.startFxService(getApplicationContext(), mPx, mPy);
     }
 
     private void clean(){
@@ -470,18 +475,5 @@ public class FuncService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        if(mIsHomeBack){
-            Intent mHomeIntent = new Intent(Intent.ACTION_MAIN);
-            mHomeIntent.addCategory(Intent.CATEGORY_HOME);
-            mHomeIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
-                    | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
-            startActivity(mHomeIntent);
-            Intent intent = new Intent(ActionReceiver.ACTION_ALARM);
-            intent.putExtra("x", mPx);
-            intent.putExtra("y", mPy);
-            sendBroadcast(intent);
-            mIsHomeBack = false;
-        }
-
     }
 }

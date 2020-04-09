@@ -10,31 +10,25 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.util.Log;
-import android.view.View;
 import android.view.Window;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.ListView;
 import android.widget.SeekBar;
 import android.widget.TextView;
-import android.widget.Toast;
-
 import com.mx.easytouch.R;
 import com.mx.easytouch.adapter.FavAppAdapter;
 import com.mx.easytouch.db.Providerdata;
-import com.mx.easytouch.receiver.ActionReceiver;
-import com.mx.easytouch.service.FxService;
 import com.mx.easytouch.utils.CommonUtils;
 import com.mx.easytouch.utils.DBHelper;
+import com.mx.easytouch.utils.ServiceUtil;
 import com.mx.easytouch.utils.Settings;
 import com.mx.easytouch.utils.StepConnection;
 import com.mx.easytouch.utils.StepCountReporter;
 import com.mx.easytouch.vo.InstallPackage;
-
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
-
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnCheckedChanged;
@@ -43,21 +37,22 @@ import butterknife.OnClick;
 public class MainActivity extends Activity {
 
     @OnClick(R.id.btnSetAccess)
-    void onBtnSetAccessClickHandler(View v){
-        Intent intent = new Intent(android.provider.Settings.ACTION_USAGE_ACCESS_SETTINGS);
-        if(intent != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
+    void onBtnSetAccessClickHandler(){
+        Intent intent;
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP){
+            intent = new Intent(android.provider.Settings.ACTION_USAGE_ACCESS_SETTINGS);
             startActivity(intent);
+        }
     }
 
     @OnClick(R.id.btnSetApp)
-    void onBtnSetAppClickHandler(View v){
+    void onBtnSetAppClickHandler(){
         Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_SETTINGS);
-        if(intent != null)
-            startActivity(intent);
+        startActivity(intent);
     }
 
 
-    @OnCheckedChanged({R.id.chkAuto, R.id.chkHY, R.id.chkShot, R.id.chkRecent, R.id.chkNotification, R.id.chkFavorite, R.id.chkVolumn })
+    @OnCheckedChanged({R.id.chkAuto, R.id.chkShot, R.id.chkRecent, R.id.chkNotification, R.id.chkFavorite, R.id.chkVolumn })
     void onCheckedAutoChanged(CompoundButton arg0, boolean arg1) {
         CommonUtils.setSPType(this, arg0.getTag().toString(), arg1);
     }
@@ -67,14 +62,16 @@ public class MainActivity extends Activity {
         showInstalledAppDialog();
     }
 
+    @OnClick(R.id.btnFloat)
+    void onFloatBtnClick(){
+        this.showAlertWindows();
+    }
+
     @BindView(R.id.listFav)
     ListView mListViewFav;
 
     @BindView(R.id.chkAuto)
     CheckBox mCheckAuto;
-
-    @BindView(R.id.chkHY)
-    CheckBox mCheckHY;
 
     @BindView(R.id.chkShot)
     CheckBox mCheckShot;
@@ -89,7 +86,7 @@ public class MainActivity extends Activity {
     CheckBox mCheckFavorite;
 
     @BindView(R.id.chkVolumn)
-    CheckBox mCheckVolumn;
+    CheckBox mCheckVolume;
 
     @BindView(R.id.seekBarFlip)
     SeekBar mSeekBarFlip;
@@ -119,7 +116,7 @@ public class MainActivity extends Activity {
         mStep = new StepConnection(this, new StepCountReporter.StepCountObserver() {
             @Override
             public void onChanged(int count) {
-                tvStepCount.setText("Step: " + String.valueOf(count));
+                tvStepCount.setText("Step: " + count);
             }
         });
 
@@ -150,12 +147,11 @@ public class MainActivity extends Activity {
 
     private void initAllCheckBox(){
         initCheckBox(mCheckAuto, Settings.INSTANCE.getSP_AUTO_CLICK());
-        initCheckBox(mCheckHY, Settings.INSTANCE.getSP_HY_AUTO());
         initCheckBox(mCheckShot, Settings.INSTANCE.getSP_SCREENSHOT());
         initCheckBox(mCheckRecent, Settings.INSTANCE.getSP_RECENT_APP());
         initCheckBox(mCheckNotification, Settings.INSTANCE.getSP_NOTIFICATION());
         initCheckBox(mCheckFavorite, Settings.INSTANCE.getSP_FAVORITE());
-        initCheckBox(mCheckVolumn, Settings.INSTANCE.getSP_VOLUMN());
+        initCheckBox(mCheckVolume, Settings.INSTANCE.getSP_VOLUMN());
     }
 
     private void initCheckBox(CheckBox chk, String set){
@@ -167,17 +163,19 @@ public class MainActivity extends Activity {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                final List<InstallPackage> packages = new ArrayList<InstallPackage>();
+                final ArrayList<InstallPackage> packages = new ArrayList<>();
                 PackageManager pm = getPackageManager();
-                List<PackageInfo> packageInfos = pm.getInstalledPackages(0);
-                for(PackageInfo ps : packageInfos){
+                List<PackageInfo> packageInfoList = pm.getInstalledPackages(0);
+                for(PackageInfo ps : packageInfoList){
                     String appName = ps.applicationInfo.loadLabel(pm).toString();
                     if(!CommonUtils.isSystemApp(ps) && !CommonUtils.isSystemUpdateApp(ps))
                         packages.add(new InstallPackage( appName,  ps.packageName ));
                 }
                 Message msg = Message.obtain();
                 msg.what = 3;
-                msg.obj = packages;
+                Bundle data = new Bundle();
+                data.putParcelableArrayList("packages", packages);
+                msg.setData(data);
                 dbHandler.sendMessage(msg);
             }
         }).start();
@@ -185,13 +183,13 @@ public class MainActivity extends Activity {
 
     private void setAppListDialog(final List<InstallPackage> packages){
         //Create sequence of items
-        final CharSequence[] dialogInfos = new String[packages.size()];
+        final CharSequence[] dialogInfoList = new String[packages.size()];
         for(int i = 0; i < packages.size(); i++){
-            dialogInfos[i] =  packages.get(i).getAppName();
+            dialogInfoList[i] =  packages.get(i).getAppName();
         }
         AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this);
         dialogBuilder.setTitle("Installed APP");
-        dialogBuilder.setItems(dialogInfos, new DialogInterface.OnClickListener() {
+        dialogBuilder.setItems(dialogInfoList, new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, final int item) {
             new Thread(new Runnable() {
                 @Override
@@ -213,10 +211,12 @@ public class MainActivity extends Activity {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                List<InstallPackage> current = mDBHelper.queryFavApp();
+                ArrayList<InstallPackage> current = mDBHelper.queryFavApp();
                 Message msg = Message.obtain();
                 msg.what = 1;
-                msg.obj = current;
+                Bundle data = new Bundle();
+                data.putParcelableArrayList("packages", current);
+                msg.setData(data);
                 dbHandler.sendMessage(msg);
             }
         }).start();
@@ -237,28 +237,35 @@ public class MainActivity extends Activity {
         }
     };
 
-    Handler dbHandler = new Handler(){
+    static class  DBHandler extends Handler{
+
+        WeakReference<MainActivity> weakReference;
+
+        DBHandler(MainActivity activity){
+            weakReference = new WeakReference<>(activity);
+        }
+
         @Override
         public void handleMessage(Message msg) {
             super.handleMessage(msg);
             if(msg.what == 1){
-                List<InstallPackage> current = (List<InstallPackage>) msg.obj;
-                FavAppAdapter adapter = new FavAppAdapter(getBaseContext(), current);
-                adapter.setFavAppTouchListener(favTouchListener);
-                mListViewFav.setAdapter(adapter);
+                List<InstallPackage> current = msg.getData().getParcelableArrayList("packages");
+                FavAppAdapter adapter = new FavAppAdapter(weakReference.get().getBaseContext(), current);
+                adapter.setFavAppTouchListener(weakReference.get().favTouchListener);
+                weakReference.get().mListViewFav.setAdapter(adapter);
             }else if(msg.what == 3){
-                List<InstallPackage> packages = (List<InstallPackage>) msg.obj;
-                setAppListDialog(packages);
+                List<InstallPackage> packages = msg.getData().getParcelableArrayList("packages");
+                assert packages != null;
+                weakReference.get().setAppListDialog(packages);
             }
         }
-    };
+    }
+
+    Handler dbHandler = new DBHandler(this);
 
     private void showAlertWindows()
     {
-        ActionReceiver.setFloatButton(this);
-//        Intent intent = new Intent(MainActivity.this, FxService.class);
-//        //启动FxService
-//        startService(intent);
+        ServiceUtil.Companion.startFxService(getApplicationContext());
     }
 
     @Override

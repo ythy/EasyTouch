@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    package="com.mx.easytouch"
-    android:versionCode="7"
-    android:versionName="2.3.5">
+    package="com.mx.easytouch">
 
     <!-- 对外部存储设备的写入权限 -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
@@ -13,6 +11,7 @@
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.INTERACT_ACROSS_USERS_FULL" />
     <uses-permission android:name="android.permission.GET_TASKS" />
+
     <uses-permission
         android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
@@ -40,28 +39,31 @@
 
         <activity
             android:name=".activity.MainActivity"
-            android:screenOrientation="portrait">
+            android:screenOrientation="portrait"
+            android:excludeFromRecents="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
+                <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
         <activity
             android:name=".activity.MediaActivity"
             android:excludeFromRecents="true"
-            android:theme="@android:style/Theme.Translucent"></activity>
+            android:theme="@android:style/Theme.Translucent" />
 
         <service
             android:name=".service.FxService"
             android:enabled="true"
-            android:process=":remote"></service>
+            android:stopWithTask="false"
+            android:process=":remote" />
+
         <service
             android:name=".service.FuncService"
-            android:enabled="true"></service>
+            android:enabled="true" />
         <service
             android:name=".service.ScreenshotService"
-            android:enabled="true"></service>
+            android:enabled="true" />
 
         <receiver
             android:name=".receiver.ActionReceiver"
@@ -76,6 +78,7 @@
                 <action android:name="com.mx.easytouch.alarm" />
             </intent-filter>
         </receiver>
+
         <receiver
             android:name=".receiver.TorchWidgetProvider"
             android:icon="@drawable/flash_on"
@@ -84,7 +87,7 @@
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
             <intent-filter>
-                <action android:name="COM_FLASHLIGHT"></action>
+                <action android:name="COM_FLASHLIGHT" />
             </intent-filter>
 
             <meta-data
@@ -94,14 +97,15 @@
 
         <service
             android:name=".service.TorchService"
-            android:enabled="true"></service>
+            android:enabled="true" />
+
         <service android:name=".service.FavorAppService">
             <intent-filter>
                 <action android:name="com.mx.easytouch.service.FavorAppService" />
             </intent-filter>
         </service>
 
-        <activity android:name=".activity.InstalledActivity"></activity>
+        <activity android:name=".activity.InstalledActivity" />
     </application>
 
 </manifest>

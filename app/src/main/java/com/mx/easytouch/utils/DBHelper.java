@@ -49,8 +49,8 @@ public class DBHelper extends SQLiteOpenHelper {
     }
     
     
-    public List<InstallPackage> queryFavApp() {
-    	List<InstallPackage> infos = new ArrayList<InstallPackage>();
+    public ArrayList<InstallPackage> queryFavApp() {
+    	ArrayList<InstallPackage> infos = new ArrayList<InstallPackage>();
     	String[] selectionArg = null;
     	String sql = "SELECT * FROM " + FavApp.TABLE_NAME;
     	String sqlWhere = "";

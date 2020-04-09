@@ -13,21 +13,15 @@ import android.media.Image;
 import android.media.ImageReader;
 import android.media.projection.MediaProjection;
 import android.media.projection.MediaProjectionManager;
-import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.IBinder;
-import android.support.v4.os.AsyncTaskCompat;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.WindowManager;
 import android.widget.Toast;
-
 import com.mx.easytouch.utils.CommonUtils;
 import com.mx.easytouch.utils.FileUtil;
-
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -39,8 +33,8 @@ import java.nio.ByteBuffer;
 @SuppressLint("NewApi")
 public class ScreenshotService extends Service {
 
-    private static final String SCREENCAP_NAME = "screencap";
-    private static final int VIRTUAL_DISPLAY_FLAGS = DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY | DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC;
+    private static final String SCREEN_CAP_NAME = "screen_cap";
+    private static final int VIRTUAL_DISPLAY_FLAGS = DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR;
     private static Intent mResultData = null;
     private ImageReader mImageReader;
     private MediaProjection mMediaProjection;
@@ -48,7 +42,6 @@ public class ScreenshotService extends Service {
     private int mScreenWidth;
     private int mScreenHeight;
     private int mScreenDensity;
-    private DisplayMetrics mMetrics ;
 
     private int mPx;
     private int mPy;
@@ -79,7 +72,7 @@ public class ScreenshotService extends Service {
     }
 
     private void initParams(){
-        mMetrics = new DisplayMetrics();
+        DisplayMetrics mMetrics = new DisplayMetrics();
         WindowManager mWindowManager = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
         mWindowManager.getDefaultDisplay().getMetrics(mMetrics);
         mScreenDensity = mMetrics.densityDpi;
@@ -97,7 +90,7 @@ public class ScreenshotService extends Service {
     }
 
     private void createImageReader() {
-        mImageReader = ImageReader.newInstance(mScreenWidth, mScreenHeight, PixelFormat.RGBA_8888, 1);
+        mImageReader = ImageReader.newInstance(mScreenWidth, mScreenHeight, PixelFormat.RGBA_8888, 2);
         mImageReader.setOnImageAvailableListener(onImageAvailableListener, null);
     }
 
@@ -115,7 +108,7 @@ public class ScreenshotService extends Service {
     }
 
     private void virtualDisplay() {
-        mVirtualDisplay = mMediaProjection.createVirtualDisplay(SCREENCAP_NAME,
+        mVirtualDisplay = mMediaProjection.createVirtualDisplay(SCREEN_CAP_NAME,
                 mScreenWidth, mScreenHeight, mScreenDensity,
                 VIRTUAL_DISPLAY_FLAGS,
                 mImageReader.getSurface(), null, null);
@@ -125,11 +118,9 @@ public class ScreenshotService extends Service {
         @Override
         public void onImageAvailable(ImageReader reader) {
             Log.i(TAG, "in OnImageAvailable");
-            Image image = null;
             FileOutputStream fos = null;
             Bitmap bitmap = null;
-            try {
-                image = reader.acquireLatestImage();
+            try (Image image = reader.acquireLatestImage()) {
                 if (image != null) {
                     Image.Plane[] planes = image.getPlanes();
                     if (planes[0].getBuffer() == null) {
@@ -137,29 +128,54 @@ public class ScreenshotService extends Service {
                     }
                     int width = image.getWidth();
                     int height = image.getHeight();
-                    int pixelStride = planes[0].getPixelStride();
-                    int rowStride = planes[0].getRowStride();
-                    int rowPadding = rowStride - pixelStride * width;
-
-                    int offset = 0;
-                    bitmap = Bitmap.createBitmap(mMetrics, width, height, Bitmap.Config.ARGB_8888);
+                    int pixelStride = planes[0].getPixelStride(); // 像素宽度
+                    int rowStride = planes[0].getRowStride(); // 每行的宽度
+                    int rowPadding = rowStride - pixelStride * width; //每行的像素外边距
                     ByteBuffer buffer = planes[0].getBuffer();
-                    for (int i = 0; i < height; ++i) {
-                        for (int j = 0; j < width; ++j) {
-                            int pixel = 0;
-                            pixel |= (buffer.get(offset) & 0xff) << 16;     // R
-                            pixel |= (buffer.get(offset + 1) & 0xff) << 8;  // G
-                            pixel |= (buffer.get(offset + 2) & 0xff);       // B
-                            pixel |= (buffer.get(offset + 3) & 0xff) << 24; // A
-                            bitmap.setPixel(j, i, pixel);
+                    bitmap = Bitmap.createBitmap(width + rowPadding / pixelStride, height, Bitmap.Config.ARGB_8888);
+                    //此处应先通过copyPixelsFromBuffer把像素导入，再进行处理。然后通过判断像素值为0去除左右两边空白部分(原因未明)
+                    bitmap.copyPixelsFromBuffer(buffer);
+                    //此处开始处理透明冗余图片区域
+                    int start = -1;
+                    int end = bitmap.getWidth() - 1;
+                    int top = 0;
+                    int middle = bitmap.getWidth() * pixelStride / 2; // 每行中间像素位置， 如果是0换下一行
+                    int offset = 0;
+
+                    for (int i = 0; i < bitmap.getHeight(); ++i) {
+                        if(buffer.get(middle) == 0){
+                            top++;
+                            offset += rowStride;
+                            middle += rowStride;
+                            continue;
+                        }
+                        for (int j = 0; j < bitmap.getWidth(); ++j) {
+                            if(buffer.get(offset) != 0 && start == -1){
+                                start = j;
+                                offset += pixelStride;
+                                continue;
+                            }
+                            if(buffer.get(offset) == 0
+                                    && buffer.get(offset + 1) == 0
+                                    && buffer.get(offset + 2) == 0
+                                    && buffer.get(offset + 3) == 0
+                                    && start != -1){
+                                end = j;
+                                break;
+                            }
                             offset += pixelStride;
                         }
-                        offset += rowPadding;
+                        break;
                     }
+                    Log.d("ScreenCapture", " start : " + start + " - " + end + " ,  top:  " + top  );
+                    bitmap = Bitmap.createBitmap( bitmap, start, top, end + 1 - start, height - top);
+                    //处理结束
+                    image.close();
+
                     // write bitmap to a file
                     final String fileName = FileUtil.getScreenShotsName(getApplicationContext());
                     fos = new FileOutputStream(fileName);
-                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos);
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos);
                     Toast.makeText(getApplicationContext(), "screenshot captured", Toast.LENGTH_SHORT).show();
                     CommonUtils.mediaScan(getApplicationContext(), new File(fileName));
                     onBack();
@@ -177,9 +193,6 @@ public class ScreenshotService extends Service {
                 }
                 if (bitmap != null) {
                     bitmap.recycle();
-                }
-                if (image != null) {
-                    image.close();
                 }
                 stopImageReader();
             }

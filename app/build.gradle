@@ -1,16 +1,16 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
-apply plugin: 'com.neenbedankt.android-apt'
+apply plugin: 'kotlin-kapt'
 
 android {
-    compileSdkVersion 25
+    compileSdkVersion 28
     buildToolsVersion "25.0.2"
     defaultConfig {
         applicationId "com.mx.easytouch"
         minSdkVersion 16
         targetSdkVersion 25
-        versionCode 1
-        versionName "1.0"
+        versionCode 2
+        versionName "2.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
@@ -18,6 +18,9 @@ android {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
+    }
+    lintOptions {
+        disable 'SetTextI18n'
     }
 }
 
@@ -28,18 +31,20 @@ dependencies {
     })
     compile 'com.android.support:appcompat-v7:25.0.0'
     testCompile 'junit:junit:4.12'
-    apt 'com.google.dagger:dagger-compiler:2.8'
+    kapt 'com.google.dagger:dagger-compiler:2.8'
     compile 'com.google.dagger:dagger:2.8'
     provided 'javax.annotation:jsr250-api:1.0'
     compile 'javax.inject:javax.inject:1'
     compile 'com.jakewharton:butterknife:8.4.0'
-    apt 'com.jakewharton:butterknife-compiler:8.4.0'
+    kapt 'com.jakewharton:butterknife-compiler:8.4.0'
     compile 'io.reactivex.rxjava2:rxjava:2.0.4'
     compile 'io.reactivex.rxjava2:rxandroid:2.0.1'
     compile project(':aidllibrary-release')
     compile files('libs/sdk-v1.0.0.jar')
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    compile "org.jetbrains.kotlin:kotlin-reflect:1.2.51"
 }
 repositories {
+    maven{ url 'https://maven.aliyun.com/repository/google'}
     mavenCentral()
 }

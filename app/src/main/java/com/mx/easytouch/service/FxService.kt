@@ -6,7 +6,6 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.graphics.PixelFormat
-import android.graphics.Point
 import android.graphics.PointF
 import android.os.Build
 import android.os.IBinder
@@ -24,15 +23,9 @@ import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.TextView
 import android.widget.Toast
-
-import com.mx.easytouch.receiver.ActionReceiver
-import com.mx.easytouch.utils.CommonUtils
-import com.mx.easytouch.utils.Settings
-import com.mx.easytouch.utils.ShellBase
-import com.mx.easytouch.utils.TimeCount
 import com.mx.easytouch.R
 import com.mx.easytouch.components.FXAutoClick
-import com.mx.easytouch.components.FXJiangShan
+import com.mx.easytouch.utils.*
 
 import java.util.Date
 
@@ -40,7 +33,7 @@ class FxService : Service() {
 
     // 定义浮动窗口布局
     private var mFloatLayout: FrameLayout? = null
-    lateinit private var wmParams: WindowManager.LayoutParams
+    lateinit private var wmParams: LayoutParams
     // 创建浮动窗口设置布局参数的对象
     lateinit private var mWindowManager: WindowManager
     lateinit private var mTvFloat: TextView
@@ -53,6 +46,9 @@ class FxService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        Log.e(TAG, "FX onCreate ")
+        mShellBase = ShellBase()
+        createFloatView(0, 0)
     }
 
     override fun onBind(intent: Intent): IBinder? {
@@ -60,42 +56,33 @@ class FxService : Service() {
     }
 
     override fun onStartCommand(sIntent: Intent?, flags: Int, startId: Int): Int {
-        mShellBase = ShellBase()
+        Log.e(TAG, "FX onStartCommand ")
 
-        if (mFloatLayout == null) {
-            if (sIntent != null && sIntent.extras != null) {
-                val bundle = sIntent.extras
-                val positionX = bundle.getInt("position_x", 0)
-                val positionY = bundle.getInt("position_y", 0)
+        if (sIntent != null && sIntent.extras != null) {
+            val bundle = sIntent.extras
+            var positionX = bundle.getInt("position_x", 0)
+            var positionY = bundle.getInt("position_y", 0)
 
-                if (bundle.getBoolean("autoclick", false)) {
-                    createFloatView(0, 0)
-                    setWackLock()
-                    FXAutoClick(positionX + mBtnFloat.measuredWidth.div(2),
-                            positionY + mBtnFloat.measuredHeight.div(2) + statusBarHeight,
-                            bundle.getInt("frequency", 10), bundle.getIntArray("timer"), object : FXAutoClick.AutoClickHandle {
-                        override fun floatText(input: String) {
-                            mTvFloat.text = input
-                        }
+            if (bundle.getBoolean("autoclick", false)) {
+                setWackLock()
+                positionX = 0
+                positionY = 0
+                FXAutoClick(positionX + mBtnFloat.measuredWidth.div(2),
+                        positionY + mBtnFloat.measuredHeight.div(2) + statusBarHeight,
+                        bundle.getInt("frequency", 10), bundle.getIntArray("timer"), object : FXAutoClick.AutoClickHandle {
+                    override fun floatText(input: String) {
+                        mTvFloat.text = input
+                    }
 
-                        override fun end() {
-                            onShow()
-                        }
-                    })
-                } else if (bundle.getString("hyAuto") != null) {
-                    createFloatView(positionX, positionY)
-                    setWackLock()
-                    FXJiangShan(object : FXJiangShan.JSHandle{
-                        override fun floatText(input: String) {
-                            mTvFloat.text = input
-                        }
-                    })
-                } else if (bundle.getBoolean("screenshot", false)) {
-                    this.startScreenShot(positionX, positionY)
-                } else
-                    createFloatView(positionX, positionY)
-            } else
-                createFloatView(0, 0)
+                    override fun end() {
+                        onShowFuncService()
+                    }
+                })
+            }else if (bundle.getBoolean("screenshot", false)) {
+                this.startScreenShot(positionX, positionY)
+            }
+
+            setFloutTouchPosition(positionX, positionY)
         }
 
         if (CommonUtils.getSPType(this, Settings.SP_NOTIFICATION)) {
@@ -104,14 +91,11 @@ class FxService : Service() {
                     .setContentText("EasyTouch")
                     .setSmallIcon(R.drawable.bar)
                     .build()
-            floatNotification!!.flags = floatNotification!!.flags or Notification.FLAG_FOREGROUND_SERVICE
+            floatNotification.flags = floatNotification.flags or Notification.FLAG_FOREGROUND_SERVICE
             startForeground(NOTIFICATION_ID, floatNotification)
         }
 
-        if (sIntent!!.extras != null && sIntent.extras.getBoolean("screenshot", false))
-            return Service.START_NOT_STICKY
-        else
-            return Service.START_REDELIVER_INTENT
+        return START_NOT_STICKY
     }
 
     private fun createFloatView(px: Int, py: Int) {
@@ -121,7 +105,9 @@ class FxService : Service() {
                 Application.WINDOW_SERVICE) as WindowManager
         Log.i(TAG, "mWindowManager--->" + mWindowManager)
         // 设置window type
-        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT)
+        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+            wmParams.type = LayoutParams.TYPE_APPLICATION_OVERLAY
+        else if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT)
             wmParams.type = LayoutParams.TYPE_TOAST
         else
             wmParams.type = LayoutParams.TYPE_SYSTEM_ALERT
@@ -153,57 +139,63 @@ class FxService : Service() {
                 .makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED))
 
         // 设置监听浮动窗口的触摸移动
-        mBtnFloat.setOnTouchListener(object : OnTouchListener {
-            internal var moveFlag = false
-            internal var start = PointF()
-            internal var startRaw = PointF()
-            internal var lastEventTime: Long = 0
+        mBtnFloat.setOnTouchListener(onFloutTouchListener)
+    }
 
-            override fun onTouch(v: View, event: MotionEvent): Boolean {
-                when (event.action and MotionEvent.ACTION_MASK) {
-                    MotionEvent.ACTION_DOWN -> {
-                        start.set(event.x, event.y)
-                        startRaw.set(event.rawX, event.rawY)
-                        moveFlag = false
-                        lastEventTime = event.eventTime
-                    }
-                    MotionEvent.ACTION_UP -> if (!moveFlag) {
-                        if (event.eventTime - lastEventTime > LongPressTime) {
-                            mEndSelf = true
-                            clean()
-                            stopSelf()
-                        } else
-                            onShow()
-                    }
-                    MotionEvent.ACTION_MOVE -> {
-                        val deltaX = Math.sqrt(((event.x - start.x) * (event.x - start.x) + (event.y - start.y) * (event.y - start.y)).toDouble())
-                        if (deltaX > CommonUtils.getMoveDelta(applicationContext)) {
-                            moveFlag = true
-                            val dm = DisplayMetrics()
-                            mWindowManager.defaultDisplay.getMetrics(dm)
-                            var xPoint = Math.round(event.rawX - mBtnFloat.measuredWidth / 2)
-                            var yPoint = Math.round(event.rawY - mBtnFloat.measuredHeight / 2) - statusBarHeight
-                            if (xPoint < 0)
-                                xPoint = 0
-                            else if (xPoint > dm.widthPixels - mBtnFloat.measuredWidth)
-                                xPoint = dm.widthPixels - mBtnFloat.measuredWidth
-                            wmParams.x = xPoint
-                            if (yPoint < 0)
-                                yPoint = 0
-                            else if (yPoint > dm.heightPixels - statusBarHeight - mBtnFloat.measuredHeight)
-                                yPoint = dm.heightPixels - statusBarHeight - mBtnFloat.measuredHeight
-                            wmParams.y = yPoint
-                            // 刷新
-                            mWindowManager.updateViewLayout(mFloatLayout, wmParams)
-                        }
+    private fun setFloutTouchPosition(x:Int, y:Int){
+        wmParams.x = x
+        wmParams.y = y
+        mWindowManager.updateViewLayout(mFloatLayout, wmParams)
+    }
+
+    private val onFloutTouchListener = object : OnTouchListener {
+        internal var moveFlag = false
+        internal var start = PointF()
+        internal var startRaw = PointF()
+        internal var lastEventTime: Long = 0
+
+        override fun  onTouch(v: View, event: MotionEvent): Boolean {
+            when (event.action and MotionEvent.ACTION_MASK) {
+                MotionEvent.ACTION_DOWN -> {
+                    start.set(event.x, event.y)
+                    startRaw.set(event.rawX, event.rawY)
+                    moveFlag = false
+                    lastEventTime = event.eventTime
+                }
+                MotionEvent.ACTION_UP -> if (!moveFlag) {
+                    if (event.eventTime - lastEventTime > LongPressTime) {
+                        mEndSelf = true
+                        stopSelf()
+                    } else
+                        onShowFuncService()
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    val deltaX = Math.sqrt(((event.x - start.x) * (event.x - start.x) + (event.y - start.y) * (event.y - start.y)).toDouble())
+                    if (deltaX > CommonUtils.getMoveDelta(applicationContext)) {
+                        moveFlag = true
+                        val dm = DisplayMetrics()
+                        mWindowManager.defaultDisplay.getMetrics(dm)
+                        var xPoint = Math.round(event.rawX - mBtnFloat.measuredWidth / 2)
+                        var yPoint = Math.round(event.rawY - mBtnFloat.measuredHeight / 2) - statusBarHeight
+                        if (xPoint < 0)
+                            xPoint = 0
+                        else if (xPoint > dm.widthPixels - mBtnFloat.measuredWidth)
+                            xPoint = dm.widthPixels - mBtnFloat.measuredWidth
+                        wmParams.x = xPoint
+                        if (yPoint < 0)
+                            yPoint = 0
+                        else if (yPoint > dm.heightPixels - statusBarHeight - mBtnFloat.measuredHeight)
+                            yPoint = dm.heightPixels - statusBarHeight - mBtnFloat.measuredHeight
+                        wmParams.y = yPoint
+                        // 刷新
+                        mWindowManager.updateViewLayout(mFloatLayout, wmParams)
                     }
                 }
-                return false
             }
-
-        })
-
+            return false
+        }
     }
+
 
     private fun setWackLock() {
         mWakeLock = (applicationContext.getSystemService(Context.POWER_SERVICE) as PowerManager)
@@ -229,10 +221,9 @@ class FxService : Service() {
         }
 
         Toast.makeText(applicationContext, "screenshot captured", Toast.LENGTH_SHORT).show()
-        createFloatView(x, y)
     }
 
-    private fun onShow() {
+    private fun onShowFuncService() {
         this.mEndSelf = true
         val intent = Intent(this@FxService, FuncService::class.java)
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -244,7 +235,6 @@ class FxService : Service() {
         intent.putExtra("timecount", TimeCount.getInstance().hackCount)
         TimeCount.getInstance().hackCount = 0
         startService(intent)
-        clean()
         stopSelf()
     }
 
@@ -254,23 +244,21 @@ class FxService : Service() {
         if (mFloatLayout != null) {
             // 移除悬浮窗口
             mWindowManager.removeView(mFloatLayout)
+            mFloatLayout = null
         }
         mWakeLock?.release()
     }
 
     override fun onTaskRemoved(rootIntent: Intent) {
         super.onTaskRemoved(rootIntent)
-        if (!mEndSelf) {
-            ActionReceiver.setFloatButton(this)
-        }
+        Log.e(TAG, "FX onTaskRemoved")
     }
 
     override fun onDestroy() {
         // TODO Auto-generated method stub
         super.onDestroy()
-        if (!mEndSelf) {
-            ActionReceiver.setFloatButton(this)
-        }
+        clean()
+        Log.e(TAG, "FX onDestroy")
     }
 
     private val statusBarHeight: Int

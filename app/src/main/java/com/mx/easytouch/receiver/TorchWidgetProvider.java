@@ -1,8 +1,4 @@
 package com.mx.easytouch.receiver;
-
-import android.annotation.SuppressLint;
-import android.annotation.TargetApi;
-import android.app.Notification;
 import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
@@ -14,7 +10,6 @@ import android.os.Build;
 import android.support.annotation.RequiresApi;
 import android.util.Log;
 import android.widget.RemoteViews;
-
 import com.mx.easytouch.R;
 import com.mx.easytouch.service.TorchService;
 import com.mx.easytouch.utils.Camera2Utils;
